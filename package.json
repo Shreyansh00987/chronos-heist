@@ -6,12 +6,27 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "node scripts/seed-chronos.js",
+    "reset": "node scripts/reset-demo.js",
+    "test:flow": "node scripts/test-judge-flow.js"
   },
   "dependencies": {
+    "@sanity/image-url": "^2.1.1",
+    "@sanity/vision": "^5.31.2",
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/d3": "^7.4.3",
+    "@types/three": "^0.186.0",
+    "canvas-confetti": "^1.9.4",
+    "d3": "^7.9.0",
+    "lucide-react": "^1.48.0",
     "next": "16.3.6",
+    "next-sanity": "^13.3.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "sanity": "^5.31.2",
+    "styled-components": "^6.5.3",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@types/node": "^20",
