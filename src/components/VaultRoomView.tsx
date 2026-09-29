@@ -65,7 +65,8 @@ export function VaultRoomView({
   const [selectedYear, setSelectedYear] = useState<number>(initialEraYear)
   const [selectedObject, setSelectedObject] = useState<GameObject | null>(null)
   const [viewMode, setViewMode] = useState<'3d' | 'blueprint'>('3d')
-  const [inventory, setInventory] = useState<string[]>(['Chronos Scanner Device'])
+  const [cameraPreset, setCameraPreset] = useState<'iso' | 'table' | 'wall'>('iso')
+  const [inventory, setInventory] = useState<string[]>(['Chronos Temporal Scanner'])
   const [isPending, startTransition] = useTransition()
   const [actionStatus, setActionStatus] = useState<string | null>(null)
 
@@ -74,13 +75,25 @@ export function VaultRoomView({
   const currentTimeline = timelinesByEra[selectedYear]
 
   const accentColor =
-    selectedYear === 1920 ? '#d97706' : selectedYear === 1970 ? '#06b6d4' : '#a855f7'
+    selectedYear === 1920 ? '#f59e0b' : selectedYear === 1970 ? '#06b6d4' : '#a855f7'
   const accentGlow =
     selectedYear === 1920
-      ? 'rgba(217, 119, 6, 0.3)'
+      ? 'rgba(245, 158, 11, 0.35)'
       : selectedYear === 1970
-      ? 'rgba(6, 182, 212, 0.3)'
-      : 'rgba(168, 85, 247, 0.3)'
+      ? 'rgba(6, 182, 212, 0.35)'
+      : 'rgba(168, 85, 247, 0.35)'
+
+  // Check if 2026 hidden compartment is revealed
+  const room2026 = roomsByEra[2026]
+  const isCompartmentRevealed = room2026?.hiddenCompartments?.some((c) => c.revealed)
+  const hasKeyInInventory = inventory.includes('Antique Brass Vault Key')
+  const hasCoreInInventory = inventory.includes('The Chronos Core Cylinder')
+
+  // Calculate Heist Progress %
+  let heistProgress = 15
+  if (hasKeyInInventory) heistProgress = 35
+  if (isCompartmentRevealed) heistProgress = 75
+  if (hasCoreInInventory) heistProgress = 100
 
   // Handle Pick Up
   const handlePickup = (obj: GameObject) => {
@@ -105,14 +118,13 @@ export function VaultRoomView({
         await proposeTemporalAction(formData)
         setActionStatus('Temporal action committed! Initiating Causality Engine...')
 
-        // Trigger Causality
         await commitCausality()
         setActionStatus('Causality Engine executed! Switch to 2026 to inspect the materialized compartment.')
 
         playDiscoveryFanfare()
         confetti({
-          particleCount: 70,
-          spread: 70,
+          particleCount: 80,
+          spread: 80,
           origin: {y: 0.8},
         })
       } catch (err: any) {
@@ -121,20 +133,71 @@ export function VaultRoomView({
     })
   }
 
-  // Check if 2026 hidden compartment is revealed
-  const room2026 = roomsByEra[2026]
-  const isCompartmentRevealed = room2026?.hiddenCompartments?.some((c) => c.revealed)
-
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: '1.25rem'}}>
+      {/* HEIST MISSION DOSSIER & PROGRESS HUD */}
+      <div
+        style={{
+          background: 'linear-gradient(90deg, #0d131f 0%, #161026 100%)',
+          border: '1px solid #1e293b',
+          borderRadius: '10px',
+          padding: '1rem 1.5rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem',
+        }}
+      >
+        <div style={{flex: 1, minWidth: '280px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem'}}>
+            <span style={{background: '#7c3aed', color: '#ffffff', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800, fontFamily: 'monospace'}}>
+              ACTIVE HEIST DIRECTIVE
+            </span>
+            <span style={{fontSize: '0.85rem', color: '#f8fafc', fontWeight: 700, fontFamily: 'monospace'}}>
+              {hasCoreInInventory
+                ? '⭐ MISSION ACCOMPLISHED: TIMELINE STABILIZED'
+                : isCompartmentRevealed
+                ? 'OBJECTIVE 4/4: EXTRACT CHRONOS CORE FROM 2026 VAULT'
+                : hasKeyInInventory
+                ? 'OBJECTIVE 2/4: BURY BRASS KEY IN 1920 NORTH WALL'
+                : 'OBJECTIVE 1/4: INSPECT 1920 VAULT & ACQUIRE BRASS KEY'}
+            </span>
+          </div>
+          <div style={{width: '100%', height: '6px', background: '#0a0e17', borderRadius: '3px', overflow: 'hidden'}}>
+            <div
+              style={{
+                width: `${heistProgress}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #d97706, #06b6d4, #a855f7)',
+                transition: 'width 0.5s ease',
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{display: 'flex', alignItems: 'center', gap: '1rem', fontFamily: 'monospace', fontSize: '0.8rem'}}>
+          <div>
+            <span style={{color: '#64748b'}}>HEIST PROGRESS: </span>
+            <strong style={{color: heistProgress === 100 ? '#10b981' : '#c084fc'}}>{heistProgress}%</strong>
+          </div>
+          <div style={{borderLeft: '1px solid #334155', paddingLeft: '1rem'}}>
+            <span style={{color: '#64748b'}}>CAUSAL STATUS: </span>
+            <strong style={{color: isCompartmentRevealed ? '#a855f7' : '#f59e0b'}}>
+              {isCompartmentRevealed ? 'MUTATED' : 'STABLE'}
+            </strong>
+          </div>
+        </div>
+      </div>
+
       {/* TIMELINE SWITCHER HEADER */}
       <div
         style={{
           background: '#0d131f',
-          border: `1px solid ${accentColor}44`,
+          border: `1px solid ${accentColor}55`,
           borderRadius: '10px',
           padding: '1rem 1.5rem',
-          boxShadow: `0 0 20px ${accentGlow}`,
+          boxShadow: `0 0 25px ${accentGlow}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -156,7 +219,7 @@ export function VaultRoomView({
           {eras.map((era) => {
             const isSelected = era.year === selectedYear
             const eraColor =
-              era.year === 1920 ? '#d97706' : era.year === 1970 ? '#06b6d4' : '#a855f7'
+              era.year === 1920 ? '#f59e0b' : era.year === 1970 ? '#06b6d4' : '#a855f7'
             return (
               <button
                 key={era.year}
@@ -176,7 +239,7 @@ export function VaultRoomView({
                   cursor: 'pointer',
                   fontSize: '0.85rem',
                   transition: 'all 0.2s ease',
-                  boxShadow: isSelected ? `0 0 12px ${eraColor}88` : 'none',
+                  boxShadow: isSelected ? `0 0 14px ${eraColor}99` : 'none',
                 }}
               >
                 {era.year} — {era.year === 1920 ? 'ORIGIN' : era.year === 1970 ? 'ECHO' : 'CONSEQUENCE'}
@@ -185,8 +248,69 @@ export function VaultRoomView({
           })}
         </div>
 
-        {/* View Mode Toggle & Health Indicator */}
-        <div style={{display: 'flex', alignItems: 'center', gap: '1rem', fontFamily: 'monospace', fontSize: '0.85rem'}}>
+        {/* View Mode & Camera Presets */}
+        <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', fontFamily: 'monospace', fontSize: '0.8rem'}}>
+          {/* Camera Angles (in 3D mode) */}
+          {viewMode === '3d' && (
+            <div style={{display: 'flex', background: '#070a10', borderRadius: '6px', border: '1px solid #1e293b', overflow: 'hidden'}}>
+              <button
+                onClick={() => {
+                  playBeep()
+                  setCameraPreset('iso')
+                }}
+                title="Isometric Camera"
+                style={{
+                  background: cameraPreset === 'iso' ? '#1e293b' : 'transparent',
+                  color: cameraPreset === 'iso' ? '#ffffff' : '#94a3b8',
+                  border: 'none',
+                  padding: '0.3rem 0.6rem',
+                  fontSize: '0.7rem',
+                  cursor: 'pointer',
+                  fontFamily: 'monospace',
+                }}
+              >
+                ISO
+              </button>
+              <button
+                onClick={() => {
+                  playBeep()
+                  setCameraPreset('table')
+                }}
+                title="Focus Table"
+                style={{
+                  background: cameraPreset === 'table' ? '#1e293b' : 'transparent',
+                  color: cameraPreset === 'table' ? '#ffffff' : '#94a3b8',
+                  border: 'none',
+                  padding: '0.3rem 0.6rem',
+                  fontSize: '0.7rem',
+                  cursor: 'pointer',
+                  fontFamily: 'monospace',
+                }}
+              >
+                TABLE
+              </button>
+              <button
+                onClick={() => {
+                  playBeep()
+                  setCameraPreset('wall')
+                }}
+                title="Zoom North Wall"
+                style={{
+                  background: cameraPreset === 'wall' ? '#1e293b' : 'transparent',
+                  color: cameraPreset === 'wall' ? '#ffffff' : '#94a3b8',
+                  border: 'none',
+                  padding: '0.3rem 0.6rem',
+                  fontSize: '0.7rem',
+                  cursor: 'pointer',
+                  fontFamily: 'monospace',
+                }}
+              >
+                WALL
+              </button>
+            </div>
+          )}
+
+          {/* 3D vs 2D Switch */}
           <div style={{display: 'flex', background: '#070a10', borderRadius: '6px', border: '1px solid #1e293b', overflow: 'hidden'}}>
             <button
               onClick={() => {
@@ -204,7 +328,7 @@ export function VaultRoomView({
                 fontFamily: 'monospace',
               }}
             >
-              🎲 3D SPATIAL
+              🎲 3D
             </button>
             <button
               onClick={() => {
@@ -222,36 +346,35 @@ export function VaultRoomView({
                 fontFamily: 'monospace',
               }}
             >
-              🗺️ 2D BLUEPRINT
+              🗺️ 2D
             </button>
           </div>
 
           <div>
-            <div style={{fontSize: '0.65rem', color: '#64748b'}}>CAUSALITY INTEGRITY</div>
+            <div style={{fontSize: '0.65rem', color: '#64748b'}}>INTEGRITY</div>
             <div style={{color: (currentTimeline?.healthIndicator ?? 90) > 85 ? '#10b981' : '#f59e0b', fontWeight: 700}}>
-              {currentTimeline?.healthIndicator ?? 95}% [
-              {currentTimeline?.sealedState ? 'SEALED' : currentTimeline?.currentStatus?.toUpperCase() ?? 'STABLE'}]
+              {currentTimeline?.healthIndicator ?? 95}%
             </div>
           </div>
         </div>
       </div>
 
       {actionStatus && (
-        <div style={{background: '#1e1b4b', border: '1px solid #7c3aed', color: '#e9d5ff', padding: '0.6rem 1rem', borderRadius: '6px', fontSize: '0.85rem', fontFamily: 'monospace'}}>
+        <div style={{background: '#1e1b4b', border: '1px solid #7c3aed', color: '#e9d5ff', padding: '0.65rem 1rem', borderRadius: '6px', fontSize: '0.85rem', fontFamily: 'monospace'}}>
           &gt; {actionStatus}
         </div>
       )}
 
       {/* MAIN VAULT ROOM STAGE & INSPECTOR */}
       <div style={{display: 'grid', gridTemplateColumns: '2.5fr 1fr', gap: '1.25rem'}}>
-        {/* ROOM VIEW: 3D THREE.JS CANVAS OR 2D BLUEPRINT */}
+        {/* ROOM VIEW */}
         <div
           className="crt-overlay"
           style={{
-            background: '#05070e',
+            background: '#040711',
             border: `1px solid ${accentColor}55`,
             borderRadius: '10px',
-            minHeight: '520px',
+            minHeight: '540px',
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -263,13 +386,14 @@ export function VaultRoomView({
               isCompartmentRevealed={Boolean(isCompartmentRevealed)}
               onSelectObject={(obj) => setSelectedObject(obj)}
               selectedObjectId={selectedObject?._id}
+              cameraPreset={cameraPreset}
             />
           ) : (
             <div
               style={{
                 position: 'relative',
                 width: '100%',
-                height: '520px',
+                height: '540px',
                 padding: '1.5rem',
                 background:
                   selectedYear === 1920
@@ -279,11 +403,8 @@ export function VaultRoomView({
                     : 'radial-gradient(ellipse at center, #1b0a29 0%, #08030d 100%)',
               }}
             >
-              {/* Header Watermark */}
-              <div style={{position: 'absolute', top: '15px', left: '15px', color: `${accentColor}88`, fontFamily: 'monospace', fontSize: '0.75rem', pointerEvents: 'none'}}>
-                SURVEILLANCE_CAMERA_01 // {currentRoom?.name || "The Clockmaker's Vault"}
-                <br />
-                STRUCTURAL_STATE: {currentRoom?.structuralState?.toUpperCase()}
+              <div style={{position: 'absolute', top: '15px', left: '15px', color: `${accentColor}aa`, fontFamily: 'monospace', fontSize: '0.75rem'}}>
+                SURVEILLANCE_CAMERA_01 // {currentRoom?.name}
               </div>
 
               {/* North Wall Blueprint Element */}
@@ -324,7 +445,7 @@ export function VaultRoomView({
                 </div>
               </div>
 
-              {/* Interactive Object Nodes */}
+              {/* 2D Interactive Objects */}
               <div style={{position: 'absolute', inset: 0}}>
                 {currentRoom?.objects?.map((obj) => {
                   const x = obj.position?.x ?? 50
@@ -359,7 +480,7 @@ export function VaultRoomView({
                           width: isCore ? '44px' : '36px',
                           height: isCore ? '44px' : '36px',
                           borderRadius: '50%',
-                          background: isCore ? '#a855f7' : isKey ? '#d97706' : '#1e293b',
+                          background: isCore ? '#a855f7' : isKey ? '#f59e0b' : '#1e293b',
                           border: isSelected ? '2px solid #ffffff' : `2px solid ${accentColor}`,
                           display: 'flex',
                           alignItems: 'center',
@@ -404,16 +525,16 @@ export function VaultRoomView({
           {/* Object Inspector */}
           <div style={{background: '#0d131f', border: '1px solid #1e293b', borderRadius: '8px', padding: '1.25rem', flex: 1}}>
             <div style={{fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontFamily: 'monospace', borderBottom: '1px solid #1e293b', paddingBottom: '0.4rem', marginBottom: '0.75rem'}}>
-              // OBJECT_ANALYSIS_SCANNER
+              // ARTIFACT_ANALYSIS_SCANNER
             </div>
 
             {selectedObject ? (
               <div>
                 <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem'}}>
-                  <span style={{fontSize: '1.25rem'}}>
+                  <span style={{fontSize: '1.3rem'}}>
                     {selectedObject._id === 'obj-brass-key' ? '🗝️' : selectedObject._id === 'obj-chronos-core' ? '🌀' : '📦'}
                   </span>
-                  <h3 style={{margin: 0, color: '#f8fafc', fontSize: '1.1rem'}}>{selectedObject.name}</h3>
+                  <h3 style={{margin: 0, color: '#f8fafc', fontSize: '1.15rem'}}>{selectedObject.name}</h3>
                 </div>
 
                 <div style={{display: 'flex', gap: '0.5rem', marginBottom: '0.75rem'}}>
@@ -431,7 +552,7 @@ export function VaultRoomView({
 
                 {selectedObject.causalRules && (
                   <div style={{background: '#1e1b4b', borderLeft: '3px solid #a855f7', padding: '0.5rem 0.75rem', fontSize: '0.75rem', color: '#e9d5ff', marginBottom: '1rem'}}>
-                    <strong>Causal Impact:</strong> {selectedObject.causalRules}
+                    <strong>Causal Rule:</strong> {selectedObject.causalRules}
                   </div>
                 )}
 
@@ -450,7 +571,7 @@ export function VaultRoomView({
                       cursor: 'pointer',
                     }}
                   >
-                    + Pick Up / Stash in Inventory
+                    + Pick Up into Tactical Inventory
                   </button>
 
                   {/* 1920 Bury Key Action */}
@@ -459,16 +580,16 @@ export function VaultRoomView({
                       onClick={() => handleBuryKey(selectedObject._id)}
                       disabled={isPending}
                       style={{
-                        background: 'linear-gradient(135deg, #d97706, #b45309)',
+                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
                         color: '#000000',
-                        fontWeight: 800,
+                        fontWeight: 900,
                         border: 'none',
                         borderRadius: '6px',
-                        padding: '0.6rem',
+                        padding: '0.65rem',
                         fontSize: '0.85rem',
                         fontFamily: 'monospace',
                         cursor: isPending ? 'wait' : 'pointer',
-                        boxShadow: '0 0 15px rgba(217, 119, 6, 0.4)',
+                        boxShadow: '0 0 16px rgba(245, 158, 11, 0.5)',
                       }}
                     >
                       {isPending ? 'MUTATING LAKE...' : '⚡ BURY KEY IN NORTH WALL CAVITY'}
@@ -481,20 +602,20 @@ export function VaultRoomView({
                       onClick={() => {
                         handlePickup(selectedObject)
                         playDiscoveryFanfare()
-                        confetti({particleCount: 100, spread: 80})
-                        setActionStatus('MISSION ACCOMPLISHED: The Chronos Core has been recovered from the future!')
+                        confetti({particleCount: 120, spread: 90})
+                        setActionStatus('MISSION ACCOMPLISHED: The Chronos Core has been recovered! History stabilized.')
                       }}
                       style={{
                         background: 'linear-gradient(135deg, #a855f7, #6366f1)',
                         color: '#ffffff',
-                        fontWeight: 800,
+                        fontWeight: 900,
                         border: 'none',
                         borderRadius: '6px',
-                        padding: '0.6rem',
+                        padding: '0.65rem',
                         fontSize: '0.85rem',
                         fontFamily: 'monospace',
                         cursor: 'pointer',
-                        boxShadow: '0 0 20px rgba(168, 85, 247, 0.6)',
+                        boxShadow: '0 0 24px rgba(168, 85, 247, 0.7)',
                       }}
                     >
                       ⭐ EXTRACT CHRONOS CORE CYLINDER
@@ -504,7 +625,7 @@ export function VaultRoomView({
               </div>
             ) : (
               <div style={{color: '#64748b', fontSize: '0.85rem', fontStyle: 'italic', padding: '1rem 0'}}>
-                Click or drag in the 3D scene to inspect artifacts and trigger temporal actions.
+                Click or drag in the 3D scene to inspect artifacts and trigger temporal mutations.
               </div>
             )}
           </div>
