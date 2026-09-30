@@ -120,12 +120,31 @@ Sanity Patch: timeline-2026 healthIndicator = 100%, sealedState = true
 | Route | Purpose |
 |---|---|
 | `/` | Atmospheric Mission Briefing, Era Telemetry, & Judge Architecture Panel |
-| `/game/[session]` | Core Playable Vault Game with multi-era timeline switcher, interactive objects, and live causality updates |
+| `/game/[session]` | Core Playable Vault Game with 3D Spatial Canvas, Minimap Radar, Puzzles, Audio Logs & Live Causality |
 | `/game/[session]/timeline` | Timeline Intelligence, historical diff scanner, and paradox detection grid |
 | `/gm/[session]` | Game Master Command Center: inspect causal shifts, review agent analysis, and seal timelines |
 | `/causality` | Interactive D3 Causality Dependency Graph connected to live Sanity data |
 | `/studio` | Customized Sanity Studio Operations Center mounted in Next.js |
 | `/admin/reset` | Emergency data reset utility |
+
+---
+
+## 🧩 Interactive Gaming & Immersion Mechanics
+
+1. **3D Spatial Room & Real-time Sector Radar (`RoomMinimap.tsx`)**:
+   - 360° orbit camera with raycasting, high-contrast procedural era textures (Victorian oak/parquet with crimson velvet rug, Cold War slate with hazard walkways, and Cyberpunk titanium with glowing circuit traces).
+   - Real-time schematic sector radar allows 1-click camera zooming between the heavy Bank Vault Door, Examination Workbench, and North Wall Safe.
+2. **Interactive Rotary Safe Combination Minigame (`SafeDialPuzzle.tsx`)**:
+   - Functional 3-dial mechanical safe lock keyed to historical coordinates (`19 - 70 - 26`).
+   - Mechanical tick audio feedback and particle celebrations upon cracking.
+3. **Cathode Oscilloscope Resonance Tuner (`OscilloscopePuzzle.tsx`)**:
+   - Real-time sine wave frequency matching minigame. Tuning to the 432 Hz standing wave harmonic locks the temporal acoustic cipher.
+4. **Detective Evidence Pinboard (`EvidenceBoardModal.tsx`)**:
+   - Interactive investigative corkboard fetching live `clue` documents from Sanity Content Lake with era filtering and live search.
+5. **Temporal Voice Transmissions & Equalizer (`TemporalAudioLog.tsx`)**:
+   - Live procedural Web Audio transmission player featuring dramatized logs from Master Clockmaker Alistair Vance (1920), Major Gregory Stone (1970), and Sentinel AI (2026).
+6. **Clockmaker's Manuscript Journal (`JournalModal.tsx`)**:
+   - Interactive weathered leather journal viewer with handwritten causal theories, safe schematics, and frequency formulas.
 
 ---
 
