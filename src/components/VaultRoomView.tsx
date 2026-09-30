@@ -519,14 +519,21 @@ export function VaultRoomView({
                 padding: '1.5rem',
                 background:
                   selectedYear === 1920
-                    ? 'radial-gradient(ellipse at center, #261607 0%, #0a0602 100%)'
+                    ? 'radial-gradient(ellipse at center, #2e1b0e 0%, #150c05 100%)'
                     : selectedYear === 1970
-                    ? 'radial-gradient(ellipse at center, #06222b 0%, #030c0f 100%)'
-                    : 'radial-gradient(ellipse at center, #1b0a29 0%, #08030d 100%)',
+                    ? 'radial-gradient(ellipse at center, #0f2e3d 0%, #06151c 100%)'
+                    : 'radial-gradient(ellipse at center, #23113a 0%, #0c0514 100%)',
+                backgroundImage:
+                  selectedYear === 1920
+                    ? 'linear-gradient(to right, rgba(245, 158, 11, 0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(245, 158, 11, 0.12) 1px, transparent 1px)'
+                    : selectedYear === 1970
+                    ? 'linear-gradient(to right, rgba(6, 182, 212, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(6, 182, 212, 0.15) 1px, transparent 1px)'
+                    : 'linear-gradient(to right, rgba(168, 85, 247, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(168, 85, 247, 0.15) 1px, transparent 1px)',
+                backgroundSize: '32px 32px',
               }}
             >
-              <div style={{position: 'absolute', top: '15px', left: '15px', color: `${accentColor}aa`, fontFamily: 'monospace', fontSize: '0.75rem'}}>
-                SURVEILLANCE_CAMERA_01 // {currentRoom?.name}
+              <div style={{position: 'absolute', top: '15px', left: '15px', color: accentColor, fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 800, background: 'rgba(5, 7, 15, 0.85)', padding: '0.3rem 0.6rem', borderRadius: '4px', border: `1px solid ${accentColor}55`}}>
+                📐 ARCHITECTURAL BLUEPRINT // {currentRoom?.name?.toUpperCase()}
               </div>
 
               {/* North Wall Blueprint Element */}

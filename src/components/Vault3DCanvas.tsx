@@ -1,6 +1,6 @@
 'use client'
 
-import React, {useEffect, useRef, useState} from 'react'
+import React, {useEffect, useRef, useState, useMemo} from 'react'
 import * as THREE from 'three'
 import {playTick, playBeep, playWarp} from '@/lib/soundEffects'
 
@@ -23,6 +23,152 @@ interface Vault3DProps {
   cameraPreset?: 'iso' | 'table' | 'wall'
 }
 
+interface ScreenMarker {
+  id: string
+  name: string
+  icon: string
+  screenX: number
+  screenY: number
+  visible: boolean
+  color: string
+  gameObject: GameObject
+}
+
+// Procedural texture generators for vibrant, distinct era aesthetics
+function create1920ParquetTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')!
+
+  // Warm rich mahogany and oak parquet checkerboard
+  ctx.fillStyle = '#6b3212'
+  ctx.fillRect(0, 0, 512, 512)
+
+  const tileSize = 64
+  for (let y = 0; y < 512; y += tileSize) {
+    for (let x = 0; x < 512; x += tileSize) {
+      const isAlt = ((x / tileSize) + (y / tileSize)) % 2 === 0
+      ctx.fillStyle = isAlt ? '#8b4513' : '#a0522d'
+      ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4)
+
+      // Wood grain lines
+      ctx.strokeStyle = isAlt ? '#5c2b0c' : '#6b3212'
+      ctx.lineWidth = 1
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath()
+        if (isAlt) {
+          ctx.moveTo(x + 4, y + 8 + i * 14)
+          ctx.lineTo(x + tileSize - 4, y + 8 + i * 14)
+        } else {
+          ctx.moveTo(x + 8 + i * 14, y + 4)
+          ctx.lineTo(x + 8 + i * 14, y + tileSize - 4)
+        }
+        ctx.stroke()
+      }
+
+      // Brass border studs
+      ctx.fillStyle = '#d4af37'
+      ctx.fillRect(x, y, 3, 3)
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.wrapS = THREE.RepeatWrapping
+  texture.wrapT = THREE.RepeatWrapping
+  texture.repeat.set(4, 4)
+  return texture
+}
+
+function create1970BunkerFloorTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')!
+
+  // Slate grey industrial flooring with hazard border
+  ctx.fillStyle = '#334155'
+  ctx.fillRect(0, 0, 512, 512)
+
+  const tileSize = 128
+  for (let y = 0; y < 512; y += tileSize) {
+    for (let x = 0; x < 512; x += tileSize) {
+      const isAlt = ((x / tileSize) + (y / tileSize)) % 2 === 0
+      ctx.fillStyle = isAlt ? '#475569' : '#1e293b'
+      ctx.fillRect(x + 3, y + 3, tileSize - 6, tileSize - 6)
+
+      // Steel floor rivets in corners
+      ctx.fillStyle = '#94a3b8'
+      ctx.beginPath()
+      ctx.arc(x + 10, y + 10, 3, 0, Math.PI * 2)
+      ctx.arc(x + tileSize - 10, y + 10, 3, 0, Math.PI * 2)
+      ctx.arc(x + 10, y + tileSize - 10, 3, 0, Math.PI * 2)
+      ctx.arc(x + tileSize - 10, y + tileSize - 10, 3, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+
+  // Yellow & black hazard stripes along borders
+  ctx.lineWidth = 14
+  ctx.strokeStyle = '#eab308'
+  ctx.strokeRect(7, 7, 498, 498)
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.wrapS = THREE.RepeatWrapping
+  texture.wrapT = THREE.RepeatWrapping
+  texture.repeat.set(2, 2)
+  return texture
+}
+
+function create2026QuantumFloorTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const ctx = canvas.getContext('2d')!
+
+  // Deep obsidian titanium with neon circuit grid
+  ctx.fillStyle = '#0a0e1a'
+  ctx.fillRect(0, 0, 512, 512)
+
+  ctx.strokeStyle = '#1e293b'
+  ctx.lineWidth = 2
+  for (let i = 0; i <= 512; i += 64) {
+    ctx.beginPath()
+    ctx.moveTo(i, 0)
+    ctx.lineTo(i, 512)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(0, i)
+    ctx.lineTo(512, i)
+    ctx.stroke()
+  }
+
+  // Cyan and purple glowing circuit nodes
+  ctx.fillStyle = '#06b6d4'
+  for (let y = 64; y < 512; y += 128) {
+    for (let x = 64; x < 512; x += 128) {
+      ctx.beginPath()
+      ctx.arc(x, y, 4, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+
+  ctx.fillStyle = '#a855f7'
+  for (let y = 128; y < 512; y += 128) {
+    for (let x = 128; x < 512; x += 128) {
+      ctx.beginPath()
+      ctx.arc(x, y, 5, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.wrapS = THREE.RepeatWrapping
+  texture.wrapT = THREE.RepeatWrapping
+  texture.repeat.set(3, 3)
+  return texture
+}
+
 export function Vault3DCanvas({
   eraYear,
   objects,
@@ -33,6 +179,7 @@ export function Vault3DCanvas({
 }: Vault3DProps) {
   const mountRef = useRef<HTMLDivElement | null>(null)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
+  const [screenMarkers, setScreenMarkers] = useState<ScreenMarker[]>([])
   const isDraggingRef = useRef(false)
   const previousMousePositionRef = useRef({x: 0, y: 0})
   
@@ -41,17 +188,17 @@ export function Vault3DCanvas({
     theta: Math.PI / 4,
     phi: Math.PI / 6,
     radius: 17,
-    targetY: 2,
+    targetY: 2.2,
   })
 
-  // Set camera angle preset
+  // Camera Presets
   useEffect(() => {
     if (cameraPreset === 'table') {
-      cameraAngleRef.current = {theta: Math.PI / 3, phi: Math.PI / 4, radius: 10, targetY: 2.2}
+      cameraAngleRef.current = {theta: Math.PI / 3.2, phi: Math.PI / 4.5, radius: 9.5, targetY: 2.2}
     } else if (cameraPreset === 'wall') {
-      cameraAngleRef.current = {theta: 0.1, phi: Math.PI / 8, radius: 11, targetY: 4.2}
+      cameraAngleRef.current = {theta: 0.05, phi: Math.PI / 8, radius: 11, targetY: 4.5}
     } else {
-      cameraAngleRef.current = {theta: Math.PI / 4, phi: Math.PI / 6, radius: 17, targetY: 2}
+      cameraAngleRef.current = {theta: Math.PI / 4, phi: Math.PI / 6, radius: 17, targetY: 2.2}
     }
   }, [cameraPreset])
 
@@ -83,92 +230,224 @@ export function Vault3DCanvas({
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.2
+    renderer.toneMappingExposure = 1.35
     container.innerHTML = ''
     container.appendChild(renderer.domElement)
 
-    // Era-based color palettes
-    const eraColors = {
-      1920: {ambient: 0x451a03, primary: 0xf59e0b, accent: 0xd97706, bg: 0x090502, fog: 0x120803},
-      1970: {ambient: 0x083344, primary: 0x22d3ee, accent: 0x06b6d4, bg: 0x020f14, fog: 0x031820},
-      2026: {ambient: 0x2e1065, primary: 0xc084fc, accent: 0xa855f7, bg: 0x06020c, fog: 0x0e0319},
-    }[eraYear as 1920 | 1970 | 2026] || {ambient: 0x1e293b, primary: 0xa855f7, accent: 0x9333ea, bg: 0x07090e, fog: 0x0a0f1d}
+    // Vibrant Era Color Themes & Lighting
+    const eraThemes = {
+      1920: {
+        bg: 0x1a120b, // Warm dark espresso
+        ambient: 0x854d0e, // Warm amber ambient
+        primary: 0xfbbf24, // Bright warm gold
+        accent: 0xd97706, // Rich amber
+        wallColor: 0x8a5a36, // Antique wood & limestone
+        wallTrim: 0xf59e0b, // Polished brass trim
+        chandelier: 0xffedd5, // Warm lantern light
+      },
+      1970: {
+        bg: 0x0f172a, // Deep slate navy
+        ambient: 0x38bdf8, // Cold War electric cyan ambient
+        primary: 0x22d3ee, // Crisp cyan
+        accent: 0x0284c7, // Deep industrial blue
+        wallColor: 0x64748b, // High-visibility bunker concrete
+        wallTrim: 0xeab308, // Hazard yellow warning trim
+        chandelier: 0xe0f2fe, // Fluorescent white-cyan
+      },
+      2026: {
+        bg: 0x0a0614, // Cyberpunk deep obsidian
+        ambient: 0x818cf8, // Indigo-violet ambient
+        primary: 0xc084fc, // Bright neon violet
+        accent: 0x38bdf8, // Electric laser cyan
+        wallColor: 0x334155, // Sci-fi matte titanium composite
+        wallTrim: 0xa855f7, // Glowing violet trim
+        chandelier: 0xec4899, // Holographic magenta-cyan
+      },
+    }[eraYear as 1920 | 1970 | 2026] || {
+      bg: 0x0f172a,
+      ambient: 0x64748b,
+      primary: 0xa855f7,
+      accent: 0x38bdf8,
+      wallColor: 0x475569,
+      wallTrim: 0xa855f7,
+      chandelier: 0xffffff,
+    }
 
-    scene.background = new THREE.Color(eraColors.bg)
-    scene.fog = new THREE.FogExp2(eraColors.fog, 0.035)
+    scene.background = new THREE.Color(eraThemes.bg)
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(eraColors.ambient, 1.4)
+    // 2. High-Visibility Multi-Source Illumination (Crisp & High-Contrast)
+    const ambientLight = new THREE.AmbientLight(eraThemes.ambient, 2.2)
     scene.add(ambientLight)
 
-    const mainLight = new THREE.PointLight(eraColors.primary, 3.2, 28)
-    mainLight.position.set(0, 7.5, 0)
-    mainLight.castShadow = true
-    scene.add(mainLight)
+    // Overhead Center Light (Chandelier / Fluorescent Bank / Hologram Emitter)
+    const ceilingLight = new THREE.PointLight(eraThemes.chandelier, 4.2, 32)
+    ceilingLight.position.set(0, 7.8, 0)
+    ceilingLight.castShadow = true
+    ceilingLight.shadow.mapSize.width = 1024
+    ceilingLight.shadow.mapSize.height = 1024
+    scene.add(ceilingLight)
 
-    const fillLight = new THREE.DirectionalLight(eraColors.accent, 1.2)
-    fillLight.position.set(5, 10, 5)
-    scene.add(fillLight)
+    // Hanging Chandelier / Fixture Mesh
+    const chandelierGeo = new THREE.CylinderGeometry(0.8, 1.2, 0.4, 16)
+    const chandelierMat = new THREE.MeshStandardMaterial({
+      color: eraYear === 1920 ? 0xd4af37 : eraYear === 1970 ? 0x94a3b8 : 0x38bdf8,
+      metalness: 0.9,
+      emissive: eraThemes.primary,
+      emissiveIntensity: 0.8,
+    })
+    const chandelier = new THREE.Mesh(chandelierGeo, chandelierMat)
+    chandelier.position.set(0, 8.4, 0)
+    scene.add(chandelier)
 
-    // Lanterns / Beacons
-    const lantern1 = new THREE.PointLight(eraColors.primary, 1.8, 14)
-    lantern1.position.set(-6, 4.5, -6)
-    scene.add(lantern1)
+    // Directional Fill Light for sharp depth definition
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5)
+    dirLight.position.set(6, 12, 8)
+    dirLight.castShadow = true
+    scene.add(dirLight)
 
-    const lantern2 = new THREE.PointLight(eraColors.primary, 1.8, 14)
-    lantern2.position.set(6, 4.5, -6)
-    scene.add(lantern2)
+    // Corner Architectural Sconces
+    const sconceLight1 = new THREE.PointLight(eraThemes.primary, 2.0, 14)
+    sconceLight1.position.set(-6.8, 5, -7)
+    scene.add(sconceLight1)
 
-    // 2. Room Architecture (Floor, Walls, Baseboards)
+    const sconceLight2 = new THREE.PointLight(eraThemes.primary, 2.0, 14)
+    sconceLight2.position.set(6.8, 5, -7)
+    scene.add(sconceLight2)
+
+    // 3. Vault Architectural Geometry (Floor, Walls, Molding, Pillars)
+    let floorTexture: THREE.CanvasTexture
+    if (eraYear === 1920) floorTexture = create1920ParquetTexture()
+    else if (eraYear === 1970) floorTexture = create1970BunkerFloorTexture()
+    else floorTexture = create2026QuantumFloorTexture()
+
     const floorGeo = new THREE.PlaneGeometry(16, 16)
     const floorMat = new THREE.MeshStandardMaterial({
-      color: eraYear === 1920 ? 0x27150a : eraYear === 1970 ? 0x1a2634 : 0x090d16,
-      roughness: 0.5,
-      metalness: eraYear === 2026 ? 0.75 : 0.15,
+      map: floorTexture,
+      roughness: eraYear === 2026 ? 0.2 : 0.45,
+      metalness: eraYear === 2026 ? 0.75 : 0.25,
     })
     const floor = new THREE.Mesh(floorGeo, floorMat)
     floor.rotation.x = -Math.PI / 2
     floor.receiveShadow = true
     scene.add(floor)
 
-    // Floor Grid lines for 1970/2026
-    if (eraYear !== 1920) {
-      const grid = new THREE.GridHelper(16, 16, eraColors.primary, 0x1e293b)
-      grid.position.y = 0.02
-      scene.add(grid)
-    }
-
-    // North Wall
-    const wallMat = new THREE.MeshStandardMaterial({
-      color: eraYear === 1920 ? 0x361f12 : eraYear === 1970 ? 0x283548 : 0x140f20,
-      roughness: 0.8,
+    // Ceiling Beams / Grid Structure
+    const beamGeo = new THREE.BoxGeometry(16, 0.5, 0.6)
+    const beamMat = new THREE.MeshStandardMaterial({
+      color: eraYear === 1920 ? 0x451a03 : 0x1e293b,
+      metalness: 0.4,
     })
+    ;[-4, 0, 4].forEach((z) => {
+      const beam = new THREE.Mesh(beamGeo, beamMat)
+      beam.position.set(0, 8.8, z)
+      scene.add(beam)
+    })
+
+    // NORTH WALL (Masonry / Concrete / Composite)
     const northWallGeo = new THREE.BoxGeometry(16, 9, 0.6)
-    const northWall = new THREE.Mesh(northWallGeo, wallMat)
+    const northWallMat = new THREE.MeshStandardMaterial({
+      color: eraThemes.wallColor,
+      roughness: 0.6,
+      metalness: 0.2,
+    })
+    const northWall = new THREE.Mesh(northWallGeo, northWallMat)
     northWall.position.set(0, 4.5, -8)
     northWall.receiveShadow = true
     scene.add(northWall)
 
-    // West Wall
+    // Wainscoting / Base Panel along North Wall (1920 rich wood / 1970 hazard stripe / 2026 neon strip)
+    const wainscotGeo = new THREE.BoxGeometry(16, 2.4, 0.7)
+    const wainscotMat = new THREE.MeshStandardMaterial({
+      color: eraYear === 1920 ? 0x4a220b : eraYear === 1970 ? 0x1e293b : 0x0f172a,
+      metalness: eraYear === 2026 ? 0.8 : 0.3,
+    })
+    const wainscot = new THREE.Mesh(wainscotGeo, wainscotMat)
+    wainscot.position.set(0, 1.2, -7.95)
+    scene.add(wainscot)
+
+    // Baseboard Molding
+    const moldingGeo = new THREE.BoxGeometry(16, 0.35, 0.45)
+    const moldingMat = new THREE.MeshStandardMaterial({
+      color: eraThemes.wallTrim,
+      metalness: 0.85,
+      roughness: 0.2,
+      emissive: eraThemes.wallTrim,
+      emissiveIntensity: 0.35,
+    })
+    const molding = new THREE.Mesh(moldingGeo, moldingMat)
+    molding.position.set(0, 0.18, -7.65)
+    scene.add(molding)
+
+    // WEST WALL
     const westWallGeo = new THREE.BoxGeometry(0.6, 9, 16)
-    const westWall = new THREE.Mesh(westWallGeo, wallMat)
+    const westWall = new THREE.Mesh(westWallGeo, northWallMat)
     westWall.position.set(-8, 4.5, 0)
     westWall.receiveShadow = true
     scene.add(westWall)
 
-    // Molding / Trim
-    const moldingGeo = new THREE.BoxGeometry(16, 0.4, 0.4)
-    const moldingMat = new THREE.MeshStandardMaterial({color: eraColors.accent, metalness: 0.8, roughness: 0.3})
-    const baseMolding = new THREE.Mesh(moldingGeo, moldingMat)
-    baseMolding.position.set(0, 0.2, -7.7)
-    scene.add(baseMolding)
+    // Architectural Pillars in Corners
+    const pillarGeo = new THREE.BoxGeometry(1, 9, 1)
+    const pillarMat = new THREE.MeshStandardMaterial({
+      color: eraYear === 1920 ? 0x3d1a08 : 0x1e293b,
+      metalness: 0.5,
+    })
+    ;[
+      [-7.5, 4.5, -7.5],
+      [7.5, 4.5, -7.5],
+    ].forEach(([px, py, pz]) => {
+      const pillar = new THREE.Mesh(pillarGeo, pillarMat)
+      pillar.position.set(px, py, pz)
+      scene.add(pillar)
+    })
 
-    // 3. Central Investigation Table
-    const tableGeo = new THREE.BoxGeometry(6.4, 0.35, 3.2)
-    const tableMat = new THREE.MeshStandardMaterial({
-      color: eraYear === 1920 ? 0x421b05 : 0x1e293b,
+    // 4. MASSIVE VAULT DOOR ON WEST WALL (Immediately identifiable as a VAULT!)
+    const vaultDoorGroup = new THREE.Group()
+    vaultDoorGroup.position.set(-7.7, 4.2, -1.5)
+    vaultDoorGroup.rotation.y = Math.PI / 2
+
+    // Circular Vault Frame
+    const doorFrameGeo = new THREE.TorusGeometry(2.4, 0.25, 16, 32)
+    const doorFrameMat = new THREE.MeshStandardMaterial({
+      color: eraYear === 1920 ? 0xd4af37 : 0x94a3b8,
+      metalness: 0.95,
+      roughness: 0.2,
+    })
+    const doorFrame = new THREE.Mesh(doorFrameGeo, doorFrameMat)
+    vaultDoorGroup.add(doorFrame)
+
+    // Solid Heavy Vault Door Disc
+    const doorDiscGeo = new THREE.CylinderGeometry(2.35, 2.35, 0.35, 32)
+    const doorDiscMat = new THREE.MeshStandardMaterial({
+      color: eraYear === 1920 ? 0x78350f : eraYear === 1970 ? 0x334155 : 0x0f172a,
+      metalness: 0.85,
       roughness: 0.3,
-      metalness: eraYear === 2026 ? 0.85 : 0.25,
+    })
+    const doorDisc = new THREE.Mesh(doorDiscGeo, doorDiscMat)
+    doorDisc.rotation.x = Math.PI / 2
+    vaultDoorGroup.add(doorDisc)
+
+    // Central Spoked Wheel
+    const wheelHubGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.3, 16)
+    const wheelHub = new THREE.Mesh(wheelHubGeo, doorFrameMat)
+    wheelHub.rotation.x = Math.PI / 2
+    wheelHub.position.z = 0.25
+    vaultDoorGroup.add(wheelHub)
+
+    const wheelSpokeGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.8, 8)
+    ;[0, Math.PI / 4, Math.PI / 2, (3 * Math.PI) / 4].forEach((angle) => {
+      const spoke = new THREE.Mesh(wheelSpokeGeo, doorFrameMat)
+      spoke.rotation.z = angle
+      spoke.position.z = 0.32
+      vaultDoorGroup.add(spoke)
+    })
+    scene.add(vaultDoorGroup)
+
+    // 5. CENTRAL EXAMINATION WORKBENCH
+    const tableGeo = new THREE.BoxGeometry(6.6, 0.38, 3.4)
+    const tableMat = new THREE.MeshStandardMaterial({
+      color: eraYear === 1920 ? 0x542308 : eraYear === 1970 ? 0x1e293b : 0x0f172a,
+      roughness: 0.3,
+      metalness: eraYear === 2026 ? 0.9 : 0.25,
     })
     const table = new THREE.Mesh(tableGeo, tableMat)
     table.position.set(0, 2, 0)
@@ -176,58 +455,103 @@ export function Vault3DCanvas({
     table.receiveShadow = true
     scene.add(table)
 
-    // Table legs
-    const legGeo = new THREE.CylinderGeometry(0.12, 0.12, 2, 16)
-    const legMat = new THREE.MeshStandardMaterial({color: 0x0f172a, metalness: 0.8})
+    // Table Brass/Steel Edge Trim
+    const tableTrimGeo = new THREE.BoxGeometry(6.7, 0.08, 3.5)
+    const tableTrimMat = new THREE.MeshStandardMaterial({color: eraThemes.primary, metalness: 0.9})
+    const tableTrim = new THREE.Mesh(tableTrimGeo, tableTrimMat)
+    tableTrim.position.set(0, 2.16, 0)
+    scene.add(tableTrim)
+
+    // Sturdy Table Legs with Foot Pads
+    const legGeo = new THREE.CylinderGeometry(0.14, 0.16, 2, 16)
+    const legMat = new THREE.MeshStandardMaterial({color: 0x0f172a, metalness: 0.85})
     ;[
-      [-2.8, 1, -1.3],
-      [2.8, 1, -1.3],
-      [-2.8, 1, 1.3],
-      [2.8, 1, 1.3],
+      [-2.9, 1, -1.4],
+      [2.9, 1, -1.4],
+      [-2.9, 1, 1.4],
+      [2.9, 1, 1.4],
     ].forEach(([x, y, z]) => {
       const leg = new THREE.Mesh(legGeo, legMat)
       leg.position.set(x, y, z)
       scene.add(leg)
     })
 
-    // 4. Interactive 3D Objects
+    // Green Banker's Desk Lamp in 1920
+    if (eraYear === 1920) {
+      const lampBaseGeo = new THREE.CylinderGeometry(0.25, 0.3, 0.1, 16)
+      const lampBaseMat = new THREE.MeshStandardMaterial({color: 0xd4af37, metalness: 0.9})
+      const lampBase = new THREE.Mesh(lampBaseGeo, lampBaseMat)
+      lampBase.position.set(2.4, 2.25, -1)
+      scene.add(lampBase)
+
+      const lampShadeGeo = new THREE.CylinderGeometry(0.2, 0.45, 0.3, 16)
+      const lampShadeMat = new THREE.MeshStandardMaterial({color: 0x15803d, roughness: 0.2})
+      const lampShade = new THREE.Mesh(lampShadeGeo, lampShadeMat)
+      lampShade.position.set(2.4, 2.65, -1)
+      lampShade.rotation.z = Math.PI / 6
+      scene.add(lampShade)
+
+      const lampLight = new THREE.PointLight(0xfef08a, 1.8, 6)
+      lampLight.position.set(2.4, 2.5, -1)
+      scene.add(lampLight)
+    }
+
+    // 6. INTERACTIVE 3D OBJECTS & ANCHORS
     const interactiveMeshes: THREE.Mesh[] = []
+    const markerAnchors: Array<{
+      id: string
+      name: string
+      icon: string
+      color: string
+      position: THREE.Vector3
+      gameObject: GameObject
+    }> = []
 
-    // NORTH WALL CAVITY / SECRET COMPARTMENT
+    // NORTH WALL CAVITY / COMPARTMENT
     const cavityGroup = new THREE.Group()
-    cavityGroup.position.set(0, 4.6, -7.6)
+    cavityGroup.position.set(0, 4.8, -7.6)
 
-    const cavityFrameGeo = new THREE.BoxGeometry(3.2, 2.2, 0.4)
+    const cavityFrameGeo = new THREE.BoxGeometry(3.6, 2.4, 0.5)
     const cavityFrameMat = new THREE.MeshStandardMaterial({
-      color: eraYear === 2026 && isCompartmentRevealed ? 0xa855f7 : 0x334155,
-      emissive: eraYear === 2026 && isCompartmentRevealed ? 0x7e22ce : 0x000000,
+      color: eraYear === 2026 && isCompartmentRevealed ? 0xa855f7 : 0x475569,
+      emissive: eraYear === 2026 && isCompartmentRevealed ? 0x9333ea : 0x000000,
       emissiveIntensity: 0.9,
+      metalness: 0.8,
     })
     const cavityFrame = new THREE.Mesh(cavityFrameGeo, cavityFrameMat)
     cavityGroup.add(cavityFrame)
 
-    // Sliding Door (opens if 2026 revealed)
-    const doorGeo = new THREE.BoxGeometry(2.8, 1.8, 0.2)
+    // Sliding Door (moves aside when revealed in 2026)
+    const doorGeo = new THREE.BoxGeometry(3.1, 2.0, 0.2)
     const doorMat = new THREE.MeshStandardMaterial({
       color: 0x1e293b,
       metalness: 0.9,
       roughness: 0.2,
     })
     const door = new THREE.Mesh(doorGeo, doorMat)
-    door.position.set(isCompartmentRevealed ? 2.4 : 0, 0, 0.1)
+    door.position.set(isCompartmentRevealed ? 2.6 : 0, 0, 0.15)
     cavityGroup.add(door)
 
     const cavityObj = objects.find((o) => o._id.includes('north-wall')) || {
-      _id: 'north-wall',
+      _id: 'obj-north-wall-1920',
       name: eraYear === 1920 ? 'North Wall Mortar Cavity' : 'North Wall Resonance Compartment',
-      description: 'Hidden architectural chamber in the north masonry.',
+      description: 'Hidden architectural chamber inside the vault wall masonry.',
       objectType: 'wall',
     }
     cavityFrame.userData = {gameObject: cavityObj}
     scene.add(cavityGroup)
     interactiveMeshes.push(cavityFrame)
 
-    // Dynamic props references
+    markerAnchors.push({
+      id: cavityObj._id,
+      name: cavityObj.name,
+      icon: isCompartmentRevealed ? '🔮' : '🔐',
+      color: isCompartmentRevealed ? '#c084fc' : '#f59e0b',
+      position: new THREE.Vector3(0, 5.8, -7.5),
+      gameObject: cavityObj,
+    })
+
+    // Dynamic Prop Variables
     let pendulumMesh: THREE.Mesh | null = null
     let clockGears: THREE.Mesh[] = []
     let tapeReels: THREE.Mesh[] = []
@@ -236,213 +560,258 @@ export function Vault3DCanvas({
     let coreGroup: THREE.Group | null = null
     let brassKeyGroup: THREE.Group | null = null
 
-    // 1920 SPECIFIC PROPS
+    // 1920 PROPS
     if (eraYear === 1920) {
-      // Grandfather Clock
-      const clockBodyGeo = new THREE.BoxGeometry(1.6, 7.5, 1.4)
-      const clockBodyMat = new THREE.MeshStandardMaterial({color: 0x361604, roughness: 0.3})
+      // Grandfather Clock in Corner
+      const clockBodyGeo = new THREE.BoxGeometry(1.8, 7.8, 1.5)
+      const clockBodyMat = new THREE.MeshStandardMaterial({color: 0x4a1d05, roughness: 0.3})
       const clock = new THREE.Mesh(clockBodyGeo, clockBodyMat)
-      clock.position.set(6, 3.75, -6.5)
+      clock.position.set(5.8, 3.9, -6.5)
+      clock.castShadow = true
       scene.add(clock)
 
       // Clock face
-      const faceGeo = new THREE.CircleGeometry(0.55, 32)
-      const faceMat = new THREE.MeshBasicMaterial({color: 0xfef3c7})
+      const faceGeo = new THREE.CircleGeometry(0.65, 32)
+      const faceMat = new THREE.MeshBasicMaterial({color: 0xfffbeb})
       const face = new THREE.Mesh(faceGeo, faceMat)
-      face.position.set(6, 6.2, -5.79)
+      face.position.set(5.8, 6.4, -5.74)
       scene.add(face)
 
-      // Clock gear ring
-      const gearGeo = new THREE.TorusGeometry(0.4, 0.05, 16, 24)
-      const gearMat = new THREE.MeshStandardMaterial({color: 0xf59e0b, metalness: 0.9, roughness: 0.2})
-      const gear1 = new THREE.Mesh(gearGeo, gearMat)
-      gear1.position.set(6, 4.6, -5.75)
-      scene.add(gear1)
-      clockGears.push(gear1)
-
       // Pendulum
-      const penGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.6)
-      const penMat = new THREE.MeshStandardMaterial({color: 0xf59e0b, metalness: 0.9})
+      const penGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.8)
+      const penMat = new THREE.MeshStandardMaterial({color: 0xf59e0b, metalness: 0.95})
       pendulumMesh = new THREE.Mesh(penGeo, penMat)
-      pendulumMesh.position.set(6, 3.8, -5.8)
+      pendulumMesh.position.set(5.8, 4.0, -5.75)
       scene.add(pendulumMesh)
 
-      const penBobGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.08, 32)
+      const penBobGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.1, 32)
       const penBob = new THREE.Mesh(penBobGeo, penMat)
       penBob.rotation.x = Math.PI / 2
-      penBob.position.set(0, -1.2, 0)
+      penBob.position.set(0, -1.3, 0)
       pendulumMesh.add(penBob)
 
-      // CLOCKMAKER'S VAULT KEY on table
-      const keyObj = objects.find((o) => o._id === 'obj-brass-key')
-      if (keyObj && keyObj.state !== 'buried') {
+      // Clockmaker's Journal on Table
+      const bookGeo = new THREE.BoxGeometry(1.5, 0.22, 1.1)
+      const bookMat = new THREE.MeshStandardMaterial({color: 0x78350f, roughness: 0.6})
+      const book = new THREE.Mesh(bookGeo, bookMat)
+      book.position.set(1.4, 2.3, 0)
+      const ledgerObj = objects.find((o) => o._id === 'obj-clockmakers-journal') || {
+        _id: 'obj-clockmakers-journal',
+        name: "Clockmaker's Secret Journal",
+        description: 'Bound parchment containing encrypted safe codes and temporal diagrams.',
+      }
+      book.userData = {gameObject: ledgerObj}
+      interactiveMeshes.push(book)
+      scene.add(book)
+
+      markerAnchors.push({
+        id: ledgerObj._id,
+        name: ledgerObj.name,
+        icon: '📖',
+        color: '#f59e0b',
+        position: new THREE.Vector3(1.4, 2.8, 0),
+        gameObject: ledgerObj,
+      })
+
+      // CLOCKMAKER'S VAULT KEY ON TABLE
+      const keyObj = objects.find((o) => o._id === 'obj-brass-key') || {
+        _id: 'obj-brass-key',
+        name: 'Antique Brass Vault Key',
+        description: 'Ornate 1920 solid brass key capable of surviving a century within mortar.',
+      }
+      if (keyObj.state !== 'buried') {
         brassKeyGroup = new THREE.Group()
         const keyMat = new THREE.MeshStandardMaterial({
           color: 0xf59e0b,
           metalness: 0.95,
           roughness: 0.15,
           emissive: 0xd97706,
-          emissiveIntensity: 0.5,
+          emissiveIntensity: 0.65,
         })
-        const shaftGeo = new THREE.CylinderGeometry(0.07, 0.07, 1)
+        const shaftGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2)
         const shaft = new THREE.Mesh(shaftGeo, keyMat)
         shaft.rotation.z = Math.PI / 2
         brassKeyGroup.add(shaft)
 
-        const bowGeo = new THREE.TorusGeometry(0.2, 0.06, 16, 32)
+        const bowGeo = new THREE.TorusGeometry(0.24, 0.07, 16, 32)
         const bow = new THREE.Mesh(bowGeo, keyMat)
-        bow.position.set(-0.55, 0, 0)
+        bow.position.set(-0.65, 0, 0)
         brassKeyGroup.add(bow)
 
-        const bitGeo = new THREE.BoxGeometry(0.2, 0.25, 0.06)
+        const bitGeo = new THREE.BoxGeometry(0.25, 0.3, 0.08)
         const bit = new THREE.Mesh(bitGeo, keyMat)
-        bit.position.set(0.4, 0.12, 0)
+        bit.position.set(0.48, 0.15, 0)
         brassKeyGroup.add(bit)
 
-        // Point light on the key
-        const keyLight = new THREE.PointLight(0xf59e0b, 1.5, 4)
-        keyLight.position.set(0, 0.4, 0)
-        brassKeyGroup.add(keyLight)
+        const keyPointLight = new THREE.PointLight(0xf59e0b, 2.2, 5)
+        keyPointLight.position.set(0, 0.5, 0)
+        brassKeyGroup.add(keyPointLight)
 
-        brassKeyGroup.position.set(-1.6, 2.4, 0)
+        brassKeyGroup.position.set(-1.6, 2.45, 0)
         scene.add(brassKeyGroup)
 
-        const keyHitGeo = new THREE.BoxGeometry(1.6, 1.2, 1)
+        const keyHitGeo = new THREE.BoxGeometry(1.8, 1.4, 1.2)
         const keyHitMat = new THREE.MeshBasicMaterial({visible: false})
         const keyHitbox = new THREE.Mesh(keyHitGeo, keyHitMat)
         keyHitbox.position.copy(brassKeyGroup.position)
         keyHitbox.userData = {gameObject: keyObj}
         scene.add(keyHitbox)
         interactiveMeshes.push(keyHitbox)
-      }
 
-      // Ledger Book on table
-      const bookGeo = new THREE.BoxGeometry(1.4, 0.18, 1)
-      const bookMat = new THREE.MeshStandardMaterial({color: 0x78350f, roughness: 0.7})
-      const book = new THREE.Mesh(bookGeo, bookMat)
-      book.position.set(1.5, 2.25, 0)
-      const ledgerObj = objects.find((o) => o._id === 'obj-clockmakers-journal')
-      if (ledgerObj) {
-        book.userData = {gameObject: ledgerObj}
-        interactiveMeshes.push(book)
+        markerAnchors.push({
+          id: keyObj._id,
+          name: keyObj.name,
+          icon: '🗝️',
+          color: '#fbbf24',
+          position: new THREE.Vector3(-1.6, 3.1, 0),
+          gameObject: keyObj,
+        })
       }
-      scene.add(book)
     } else if (eraYear === 1970) {
-      // High-voltage wall conduit
-      const conduitGeo = new THREE.CylinderGeometry(0.14, 0.14, 16, 16)
-      const conduitMat = new THREE.MeshStandardMaterial({color: 0x94a3b8, metalness: 0.9, roughness: 0.2})
-      const conduit = new THREE.Mesh(conduitGeo, conduitMat)
-      conduit.rotation.z = Math.PI / 2
-      conduit.position.set(0, 6.2, -7.5)
-      scene.add(conduit)
-
-      // Oscilloscope
+      // Oscilloscope on Desk
       oscCanvas = document.createElement('canvas')
       oscCanvas.width = 256
       oscCanvas.height = 256
       oscTexture = new THREE.CanvasTexture(oscCanvas)
 
-      const scopeGeo = new THREE.BoxGeometry(1.6, 1.3, 1.8)
-      const scopeMat = new THREE.MeshStandardMaterial({color: 0x1e293b, metalness: 0.6})
+      const scopeGeo = new THREE.BoxGeometry(1.8, 1.4, 2)
+      const scopeMat = new THREE.MeshStandardMaterial({color: 0x1e293b, metalness: 0.7})
       const scope = new THREE.Mesh(scopeGeo, scopeMat)
-      scope.position.set(-1.8, 2.8, 0)
+      scope.position.set(-1.8, 2.9, 0)
       scene.add(scope)
 
-      const screenGeo = new THREE.PlaneGeometry(1, 0.9)
+      const screenGeo = new THREE.PlaneGeometry(1.2, 1.0)
       const screenMat = new THREE.MeshBasicMaterial({map: oscTexture})
       const screen = new THREE.Mesh(screenGeo, screenMat)
-      screen.position.set(-1.8, 2.8, 0.91)
+      screen.position.set(-1.8, 2.9, 1.01)
       scene.add(screen)
 
-      const scopeObj = objects.find((o) => o._id === 'obj-oscilloscope-1970')
-      if (scopeObj) {
-        scope.userData = {gameObject: scopeObj}
-        interactiveMeshes.push(scope)
+      const scopeObj = objects.find((o) => o._id === 'obj-oscilloscope-1970') || {
+        _id: 'obj-oscilloscope-1970',
+        name: 'Cathode Resonance Oscilloscope',
+        description: 'Tubes tuned to detect spatial acoustic anomalies.',
       }
+      scope.userData = {gameObject: scopeObj}
+      interactiveMeshes.push(scope)
 
-      // Reel-to-Reel Recorder with 2 rotating reels
-      const tapeDeckGeo = new THREE.BoxGeometry(1.8, 1.1, 1.4)
-      const tapeDeckMat = new THREE.MeshStandardMaterial({color: 0x334155})
+      markerAnchors.push({
+        id: scopeObj._id,
+        name: scopeObj.name,
+        icon: '📻',
+        color: '#22d3ee',
+        position: new THREE.Vector3(-1.8, 3.8, 0),
+        gameObject: scopeObj,
+      })
+
+      // Reel-to-Reel Tape Recorder with rotating reels
+      const tapeDeckGeo = new THREE.BoxGeometry(2.0, 1.2, 1.5)
+      const tapeDeckMat = new THREE.MeshStandardMaterial({color: 0x334155, metalness: 0.6})
       const tapeDeck = new THREE.Mesh(tapeDeckGeo, tapeDeckMat)
-      tapeDeck.position.set(1.8, 2.7, 0)
+      tapeDeck.position.set(1.8, 2.8, 0)
       scene.add(tapeDeck)
 
-      const reelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.08, 24)
+      const reelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.09, 24)
       const reelMat = new THREE.MeshStandardMaterial({color: 0x94a3b8, metalness: 0.9})
       const reel1 = new THREE.Mesh(reelGeo, reelMat)
       reel1.rotation.x = Math.PI / 2
-      reel1.position.set(1.3, 2.9, 0.72)
+      reel1.position.set(1.3, 3.0, 0.76)
       scene.add(reel1)
       tapeReels.push(reel1)
 
       const reel2 = new THREE.Mesh(reelGeo, reelMat)
       reel2.rotation.x = Math.PI / 2
-      reel2.position.set(2.3, 2.9, 0.72)
+      reel2.position.set(2.3, 3.0, 0.76)
       scene.add(reel2)
       tapeReels.push(reel2)
 
-      const tapeObj = objects.find((o) => o._id === 'obj-tape-recorder-1970')
-      if (tapeObj) {
-        tapeDeck.userData = {gameObject: tapeObj}
-        interactiveMeshes.push(tapeDeck)
+      const tapeObj = objects.find((o) => o._id === 'obj-tape-recorder-1970') || {
+        _id: 'obj-tape-recorder-1970',
+        name: 'Reel-to-Reel Magnetic Recorder',
+        description: 'Magnetic audio archive documenting spatial frequency tests.',
       }
-    } else {
-      // 2026: Glowing Laser Grid
-      const laserMat = new THREE.MeshBasicMaterial({color: 0xa855f7})
-      ;[-2.4, 0, 2.4].forEach((x) => {
-        const laser = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 6.5), laserMat)
-        laser.position.set(x, 3.2, -4.5)
-        scene.add(laser)
+      tapeDeck.userData = {gameObject: tapeObj}
+      interactiveMeshes.push(tapeDeck)
+
+      markerAnchors.push({
+        id: tapeObj._id,
+        name: tapeObj.name,
+        icon: '📼',
+        color: '#38bdf8',
+        position: new THREE.Vector3(1.8, 3.6, 0),
+        gameObject: tapeObj,
       })
 
-      // Quantum Hologram Console
-      const holoBaseGeo = new THREE.CylinderGeometry(0.9, 1.1, 0.35, 32)
+      // High-voltage wall conduit
+      const conduitGeo = new THREE.CylinderGeometry(0.16, 0.16, 16, 16)
+      const conduitMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        metalness: 0.9,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.7,
+      })
+      const conduit = new THREE.Mesh(conduitGeo, conduitMat)
+      conduit.rotation.z = Math.PI / 2
+      conduit.position.set(0, 6.4, -7.5)
+      scene.add(conduit)
+    } else {
+      // 2026: QUANTUM ERA
+      // Hologram Console on Desk
+      const holoBaseGeo = new THREE.CylinderGeometry(1.0, 1.2, 0.4, 32)
       const holoBaseMat = new THREE.MeshStandardMaterial({color: 0x0f172a, metalness: 0.95})
       const holoBase = new THREE.Mesh(holoBaseGeo, holoBaseMat)
-      holoBase.position.set(-1.8, 2.35, 0)
+      holoBase.position.set(-1.8, 2.4, 0)
       scene.add(holoBase)
 
-      const holoRingGeo = new THREE.TorusGeometry(0.7, 0.04, 16, 64)
+      const holoRingGeo = new THREE.TorusGeometry(0.8, 0.04, 16, 64)
       const holoRingMat = new THREE.MeshBasicMaterial({color: 0x38bdf8})
       const holoRing = new THREE.Mesh(holoRingGeo, holoRingMat)
       holoRing.rotation.x = Math.PI / 2
-      holoRing.position.set(-1.8, 3, 0)
+      holoRing.position.set(-1.8, 3.1, 0)
       scene.add(holoRing)
 
-      const quantumObj = objects.find((o) => o._id === 'obj-quantum-console')
-      if (quantumObj) {
-        holoBase.userData = {gameObject: quantumObj}
-        interactiveMeshes.push(holoBase)
+      const quantumObj = objects.find((o) => o._id === 'obj-quantum-console') || {
+        _id: 'obj-quantum-console',
+        name: 'Quantum Analysis Console',
+        description: 'High-density terminal reading timeline divergences and lake mutations.',
       }
+      holoBase.userData = {gameObject: quantumObj}
+      interactiveMeshes.push(holoBase)
 
-      // If hidden compartment is revealed, render THE CHRONOS CORE CYLINDER!
+      markerAnchors.push({
+        id: quantumObj._id,
+        name: quantumObj.name,
+        icon: '🔮',
+        color: '#a855f7',
+        position: new THREE.Vector3(-1.8, 3.6, 0),
+        gameObject: quantumObj,
+      })
+
+      // If hidden compartment is revealed in 2026, render THE CHRONOS CORE CYLINDER!
       if (isCompartmentRevealed) {
         coreGroup = new THREE.Group()
-        coreGroup.position.set(0, 4.6, -7.1)
+        coreGroup.position.set(0, 4.8, -7.0)
 
-        const coreGeo = new THREE.DodecahedronGeometry(0.55, 0)
+        const coreGeo = new THREE.DodecahedronGeometry(0.65, 0)
         const coreMat = new THREE.MeshStandardMaterial({
-          color: 0xe9d5ff,
+          color: 0xf8fafc,
           emissive: 0xa855f7,
-          emissiveIntensity: 1.6,
+          emissiveIntensity: 1.8,
           roughness: 0.1,
-          metalness: 0.9,
+          metalness: 0.95,
         })
         const coreDodec = new THREE.Mesh(coreGeo, coreMat)
         coreGroup.add(coreDodec)
 
-        // Multiple orbital rings
-        const ring1Geo = new THREE.TorusGeometry(0.85, 0.03, 16, 48)
-        const ringMat = new THREE.MeshBasicMaterial({color: 0x38bdf8})
-        const ring1 = new THREE.Mesh(ring1Geo, ringMat)
+        const ring1Geo = new THREE.TorusGeometry(0.95, 0.035, 16, 48)
+        const ring1 = new THREE.Mesh(ring1Geo, new THREE.MeshBasicMaterial({color: 0x38bdf8}))
         coreGroup.add(ring1)
 
-        const ring2Geo = new THREE.TorusGeometry(1, 0.03, 16, 48)
+        const ring2Geo = new THREE.TorusGeometry(1.15, 0.035, 16, 48)
         const ring2 = new THREE.Mesh(ring2Geo, new THREE.MeshBasicMaterial({color: 0xf43f5e}))
         ring2.rotation.x = Math.PI / 3
         coreGroup.add(ring2)
 
-        const coreLight = new THREE.PointLight(0xa855f7, 4, 10)
+        const coreLight = new THREE.PointLight(0xa855f7, 4.5, 12)
         coreGroup.add(coreLight)
 
         const coreObj = objects.find((o) => o._id === 'obj-chronos-core') || {
@@ -454,29 +823,19 @@ export function Vault3DCanvas({
         coreDodec.userData = {gameObject: coreObj}
         scene.add(coreGroup)
         interactiveMeshes.push(coreDodec)
+
+        markerAnchors.push({
+          id: coreObj._id,
+          name: coreObj.name,
+          icon: '🌀',
+          color: '#ec4899',
+          position: new THREE.Vector3(0, 6.0, -7.0),
+          gameObject: coreObj,
+        })
       }
     }
 
-    // 5. Floating Dust / Tachyon Nebula Particles
-    const particleCount = 160
-    const particleGeo = new THREE.BufferGeometry()
-    const particlePositions = new Float32Array(particleCount * 3)
-    for (let i = 0; i < particleCount * 3; i += 3) {
-      particlePositions[i] = (Math.random() - 0.5) * 15
-      particlePositions[i + 1] = Math.random() * 8
-      particlePositions[i + 2] = (Math.random() - 0.5) * 15
-    }
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3))
-    const particleMat = new THREE.PointsMaterial({
-      color: eraColors.primary,
-      size: 0.14,
-      transparent: true,
-      opacity: 0.8,
-    })
-    const particles = new THREE.Points(particleGeo, particleMat)
-    scene.add(particles)
-
-    // 6. Interactive Raycasting & Mouse Controls
+    // 7. Interactive Raycasting & Mouse Controls
     const raycaster = new THREE.Raycaster()
     const mouse = new THREE.Vector2()
 
@@ -527,10 +886,8 @@ export function Vault3DCanvas({
       isDraggingRef.current = false
       renderer.domElement.style.cursor = 'grab'
 
-      // Check click raycast
       raycaster.setFromCamera(mouse, camera)
       const intersects = raycaster.intersectObjects(interactiveMeshes, true)
-
       if (intersects.length > 0) {
         let hitMesh: THREE.Object3D | null = intersects[0].object
         while (hitMesh && !hitMesh.userData.gameObject) {
@@ -546,8 +903,8 @@ export function Vault3DCanvas({
     const onWheel = (event: WheelEvent) => {
       event.preventDefault()
       cameraAngleRef.current.radius = Math.max(
-        8,
-        Math.min(26, cameraAngleRef.current.radius + event.deltaY * 0.015),
+        7,
+        Math.min(25, cameraAngleRef.current.radius + event.deltaY * 0.015),
       )
       updateCameraPos()
     }
@@ -558,9 +915,10 @@ export function Vault3DCanvas({
     window.addEventListener('mouseup', onMouseUp)
     domElement.addEventListener('wheel', onWheel, {passive: false})
 
-    // 7. Render Loop with Continuous Dynamics
+    // 8. Animation & Dynamic Marker Projection Loop
     let animationFrameId: number
     let clockTime = 0
+    const projVec = new THREE.Vector3()
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate)
@@ -578,22 +936,22 @@ export function Vault3DCanvas({
 
       // Brass Key gentle hovering rotation
       if (brassKeyGroup) {
-        brassKeyGroup.rotation.y = Math.sin(clockTime * 1.5) * 0.3
-        brassKeyGroup.position.y = 2.4 + Math.sin(clockTime * 2) * 0.06
+        brassKeyGroup.rotation.y = Math.sin(clockTime * 1.5) * 0.35
+        brassKeyGroup.position.y = 2.45 + Math.sin(clockTime * 2.2) * 0.08
       }
 
       // Tape reels spinning
       tapeReels.forEach((r) => {
-        r.rotation.z += 0.06
+        r.rotation.z += 0.07
       })
 
       // Chronos core multidimensional spinning
       if (coreGroup) {
         coreGroup.children[0].rotation.x += 0.025
         coreGroup.children[0].rotation.y += 0.035
-        coreGroup.children[1].rotation.z += 0.04
+        coreGroup.children[1].rotation.z += 0.045
         coreGroup.children[2].rotation.x -= 0.03
-        coreGroup.position.y = 4.6 + Math.sin(clockTime * 2.5) * 0.12
+        coreGroup.position.y = 4.8 + Math.sin(clockTime * 2.5) * 0.15
       }
 
       // Oscilloscope live waveform
@@ -606,7 +964,7 @@ export function Vault3DCanvas({
           ctx.lineWidth = 4
           ctx.beginPath()
           for (let x = 0; x < 256; x += 4) {
-            const y = 128 + Math.sin(x * 0.09 + clockTime * 3) * 45
+            const y = 128 + Math.sin(x * 0.09 + clockTime * 3.5) * 45
             if (x === 0) ctx.moveTo(x, y)
             else ctx.lineTo(x, y)
           }
@@ -615,13 +973,28 @@ export function Vault3DCanvas({
         }
       }
 
-      // Particle drifting
-      const positions = particleGeo.attributes.position.array as Float32Array
-      for (let i = 1; i < particleCount * 3; i += 3) {
-        positions[i] -= 0.012
-        if (positions[i] < 0) positions[i] = 8
-      }
-      particleGeo.attributes.position.needsUpdate = true
+      // Project 3D Anchors to 2D Screen Markers
+      const currentMarkers: ScreenMarker[] = []
+      markerAnchors.forEach((m) => {
+        projVec.copy(m.position)
+        projVec.project(camera)
+
+        const isVisible = projVec.z < 1.0 && projVec.x >= -1.1 && projVec.x <= 1.1 && projVec.y >= -1.1 && projVec.y <= 1.1
+        const screenX = (projVec.x * 0.5 + 0.5) * width
+        const screenY = (-projVec.y * 0.5 + 0.5) * height
+
+        currentMarkers.push({
+          id: m.id,
+          name: m.name,
+          icon: m.icon,
+          screenX,
+          screenY,
+          visible: isVisible,
+          color: m.color,
+          gameObject: m.gameObject,
+        })
+      })
+      setScreenMarkers(currentMarkers)
 
       renderer.render(scene, camera)
     }
@@ -650,23 +1023,118 @@ export function Vault3DCanvas({
     }
   }, [eraYear, objects, isCompartmentRevealed])
 
+  const eraTag =
+    eraYear === 1920
+      ? "THE CLOCKMAKER'S SECRET BANK VAULT (1920)"
+      : eraYear === 1970
+      ? 'COLD WAR CYBERNETIC BUNKER (1970)'
+      : 'QUANTUM CHRONO-CORE CHAMBER (2026)'
+
   return (
-    <div style={{position: 'relative', width: '100%', height: '540px', borderRadius: '10px', overflow: 'hidden'}}>
+    <div style={{position: 'relative', width: '100%', height: '540px', borderRadius: '10px', overflow: 'hidden', background: '#0b0f19'}}>
       <div ref={mountRef} style={{width: '100%', height: '100%', cursor: 'grab'}} />
 
-      {/* 3D HUD Telemetry */}
-      <div style={{position: 'absolute', top: '15px', left: '15px', color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.75rem', pointerEvents: 'none', background: 'rgba(5, 7, 15, 0.85)', padding: '0.45rem 0.8rem', borderRadius: '6px', border: '1px solid #1e293b'}}>
-        <div style={{color: '#f8fafc', fontWeight: 'bold'}}>
-          // 3D_SPATIAL_ORBIT_CAMERA
+      {/* Floating 3D Projected Screen Badges (Clickable & Super Clear!) */}
+      {screenMarkers.map((marker) => {
+        if (!marker.visible) return null
+        const isSelected = selectedObjectId === marker.id
+        return (
+          <div
+            key={marker.id}
+            onClick={() => {
+              playTick()
+              onSelectObject(marker.gameObject)
+            }}
+            style={{
+              position: 'absolute',
+              left: `${marker.screenX}px`,
+              top: `${marker.screenY}px`,
+              transform: 'translate(-50%, -100%)',
+              zIndex: 100,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.3rem 0.65rem',
+              borderRadius: '20px',
+              background: isSelected
+                ? 'rgba(15, 23, 42, 0.95)'
+                : 'rgba(10, 15, 29, 0.85)',
+              border: `2px solid ${isSelected ? '#ffffff' : marker.color}`,
+              boxShadow: isSelected
+                ? `0 0 20px ${marker.color}`
+                : `0 0 10px rgba(0,0,0,0.5)`,
+              color: '#ffffff',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              fontFamily: 'monospace',
+              pointerEvents: 'auto',
+              whiteSpace: 'nowrap',
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translate(-50%, -115%) scale(1.08)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translate(-50%, -100%) scale(1)'
+            }}
+          >
+            <span>{marker.icon}</span>
+            <span>{marker.name}</span>
+          </div>
+        )
+      })}
+
+      {/* 3D HUD Telemetry & Sector Banner */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '15px',
+          left: '15px',
+          color: '#94a3b8',
+          fontFamily: 'monospace',
+          fontSize: '0.75rem',
+          pointerEvents: 'none',
+          background: 'rgba(5, 7, 15, 0.9)',
+          padding: '0.5rem 0.9rem',
+          borderRadius: '8px',
+          border: '1px solid #334155',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.4)',
+        }}
+      >
+        <div style={{color: '#f8fafc', fontWeight: 800, letterSpacing: '0.05em', marginBottom: '2px'}}>
+          📍 {eraTag}
         </div>
-        <div style={{color: '#cbd5e1', fontSize: '0.7rem'}}>
-          Drag: Rotate 360° | Scroll: Zoom | Click: Inspect Artifact
+        <div style={{color: '#38bdf8', fontSize: '0.7rem'}}>
+          Drag: 360° Orbit | Scroll: Zoom | Click Badges or Artifacts to Inspect
         </div>
       </div>
 
+      {/* Target Locked HUD Banner */}
       {hoveredName && (
-        <div style={{position: 'absolute', bottom: '25px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(15, 23, 42, 0.95)', border: '1px solid #a855f7', color: '#ffffff', padding: '0.5rem 1.25rem', borderRadius: '6px', fontSize: '0.9rem', fontFamily: 'monospace', pointerEvents: 'none', boxShadow: '0 0 20px rgba(168, 85, 247, 0.6)'}}>
-          ⚡ SCANNER LOCKED: {hoveredName}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(15, 23, 42, 0.95)',
+            border: '2px solid #38bdf8',
+            color: '#ffffff',
+            padding: '0.5rem 1.5rem',
+            borderRadius: '8px',
+            fontSize: '0.85rem',
+            fontFamily: 'monospace',
+            fontWeight: 800,
+            pointerEvents: 'none',
+            boxShadow: '0 0 25px rgba(56, 189, 248, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
+          <span style={{color: '#38bdf8'}}>⚡ SCANNER TARGET ACQUIRED:</span>
+          <span>{hoveredName}</span>
         </div>
       )}
     </div>
