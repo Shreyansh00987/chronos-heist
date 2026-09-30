@@ -1,6 +1,7 @@
 {
   "name": "chronos-heist",
   "version": "0.1.0",
+  "homepage": "https://chronos-heist.vercel.app",
   "private": true,
   "scripts": {
     "dev": "next dev",
