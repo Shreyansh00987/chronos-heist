@@ -8,6 +8,8 @@ import confetti from 'canvas-confetti'
 import {SafeDialPuzzle} from '@/components/puzzles/SafeDialPuzzle'
 import {OscilloscopePuzzle} from '@/components/puzzles/OscilloscopePuzzle'
 import {EvidenceBoardModal} from '@/components/EvidenceBoardModal'
+import {TemporalAudioLog} from '@/components/TemporalAudioLog'
+import {JournalModal} from '@/components/JournalModal'
 
 interface ClueData {
   _id: string
@@ -87,6 +89,7 @@ export function VaultRoomView({
   const [showSafePuzzle, setShowSafePuzzle] = useState(false)
   const [showOscilloscopePuzzle, setShowOscilloscopePuzzle] = useState(false)
   const [showEvidenceBoard, setShowEvidenceBoard] = useState(false)
+  const [showJournal, setShowJournal] = useState(false)
   const [heistScore, setHeistScore] = useState(1250)
   const [puzzlesSolved, setPuzzlesSolved] = useState({safe: false, oscilloscope: false})
 
@@ -487,6 +490,9 @@ export function VaultRoomView({
         </div>
       )}
 
+      {/* INTERACTIVE TEMPORAL AUDIO LOG TRANSMISSION */}
+      <TemporalAudioLog eraYear={selectedYear} />
+
       {/* MAIN VAULT ROOM STAGE & INSPECTOR */}
       <div style={{display: 'grid', gridTemplateColumns: '2.5fr 1fr', gap: '1.25rem'}}>
         {/* ROOM VIEW */}
@@ -727,6 +733,34 @@ export function VaultRoomView({
                     </button>
                   )}
 
+                  {/* 1920 Clockmaker's Journal Reader */}
+                  {selectedYear === 1920 && (
+                    <button
+                      onClick={() => {
+                        playBeep()
+                        setShowJournal(true)
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, #78350f, #92400e)',
+                        color: '#fef3c7',
+                        fontWeight: 800,
+                        border: '1px solid #d97706',
+                        borderRadius: '6px',
+                        padding: '0.6rem',
+                        fontSize: '0.8rem',
+                        fontFamily: 'monospace',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.4rem',
+                        boxShadow: '0 0 14px rgba(217, 119, 6, 0.4)',
+                      }}
+                    >
+                      <span>📖</span> READ CLOCKMAKER'S JOURNAL (CLUES & SKETCHES)
+                    </button>
+                  )}
+
                   {/* 1970 Oscilloscope Minigame */}
                   {selectedYear === 1970 && (
                     <button
@@ -857,6 +891,11 @@ export function VaultRoomView({
         clues={clues}
         isOpen={showEvidenceBoard}
         onClose={() => setShowEvidenceBoard(false)}
+      />
+
+      <JournalModal
+        isOpen={showJournal}
+        onClose={() => setShowJournal(false)}
       />
     </div>
   )

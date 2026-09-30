@@ -3,6 +3,7 @@
 import React, {useEffect, useRef, useState, useMemo} from 'react'
 import * as THREE from 'three'
 import {playTick, playBeep, playWarp} from '@/lib/soundEffects'
+import {RoomMinimap} from '@/components/RoomMinimap'
 
 interface GameObject {
   _id: string
@@ -183,6 +184,8 @@ export function Vault3DCanvas({
   const isDraggingRef = useRef(false)
   const previousMousePositionRef = useRef({x: 0, y: 0})
   
+  const [activeSector, setActiveSector] = useState<'iso' | 'table' | 'wall'>(cameraPreset)
+
   // Camera angles
   const cameraAngleRef = useRef({
     theta: Math.PI / 4,
@@ -191,15 +194,20 @@ export function Vault3DCanvas({
     targetY: 2.2,
   })
 
-  // Camera Presets
-  useEffect(() => {
-    if (cameraPreset === 'table') {
+  const handleFocusSector = (sector: 'iso' | 'table' | 'wall') => {
+    setActiveSector(sector)
+    if (sector === 'table') {
       cameraAngleRef.current = {theta: Math.PI / 3.2, phi: Math.PI / 4.5, radius: 9.5, targetY: 2.2}
-    } else if (cameraPreset === 'wall') {
+    } else if (sector === 'wall') {
       cameraAngleRef.current = {theta: 0.05, phi: Math.PI / 8, radius: 11, targetY: 4.5}
     } else {
       cameraAngleRef.current = {theta: Math.PI / 4, phi: Math.PI / 6, radius: 17, targetY: 2.2}
     }
+  }
+
+  // Camera Presets
+  useEffect(() => {
+    handleFocusSector(cameraPreset)
   }, [cameraPreset])
 
   useEffect(() => {
@@ -1084,6 +1092,14 @@ export function Vault3DCanvas({
           </div>
         )
       })}
+
+      {/* Interactive 3D Room Minimap & Radar Guide */}
+      <RoomMinimap
+        eraYear={eraYear}
+        isCompartmentRevealed={isCompartmentRevealed}
+        onFocusSector={handleFocusSector}
+        activeSector={activeSector}
+      />
 
       {/* 3D HUD Telemetry & Sector Banner */}
       <div
