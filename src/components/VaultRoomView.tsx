@@ -182,23 +182,25 @@ export function VaultRoomView({
       {/* HEIST MISSION DOSSIER & PROGRESS HUD */}
       <div
         style={{
-          background: 'linear-gradient(90deg, #0d131f 0%, #161026 100%)',
-          border: '1px solid #1e293b',
-          borderRadius: '10px',
-          padding: '1rem 1.5rem',
+          background: 'linear-gradient(135deg, rgba(13, 19, 31, 0.95) 0%, rgba(22, 16, 38, 0.95) 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '12px',
+          padding: '1.1rem 1.6rem',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '1rem',
+          gap: '1.25rem',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45)',
+          backdropFilter: 'blur(16px)',
         }}
       >
         <div style={{flex: 1, minWidth: '280px'}}>
-          <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem'}}>
-            <span style={{background: '#7c3aed', color: '#ffffff', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800, fontFamily: 'monospace'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem'}}>
+            <span style={{background: 'linear-gradient(135deg, #7c3aed, #9333ea)', color: '#ffffff', padding: '0.2rem 0.55rem', borderRadius: '5px', fontSize: '0.7rem', fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.06em', boxShadow: '0 0 10px rgba(147, 51, 234, 0.5)'}}>
               ACTIVE HEIST DIRECTIVE
             </span>
-            <span style={{fontSize: '0.85rem', color: '#f8fafc', fontWeight: 700, fontFamily: 'monospace'}}>
+            <span style={{fontSize: '0.85rem', color: '#f8fafc', fontWeight: 800, fontFamily: 'monospace'}}>
               {hasCoreInInventory
                 ? '⭐ MISSION ACCOMPLISHED: TIMELINE STABILIZED'
                 : isCompartmentRevealed
@@ -208,32 +210,37 @@ export function VaultRoomView({
                 : 'OBJECTIVE 1/4: INSPECT 1920 VAULT & ACQUIRE BRASS KEY'}
             </span>
           </div>
-          <div style={{width: '100%', height: '6px', background: '#0a0e17', borderRadius: '3px', overflow: 'hidden'}}>
+          <div style={{width: '100%', height: '8px', background: '#0a0e17', borderRadius: '4px', overflow: 'hidden', border: '1px solid #1e293b'}}>
             <div
               style={{
                 width: `${heistProgress}%`,
                 height: '100%',
                 background: 'linear-gradient(90deg, #d97706, #06b6d4, #a855f7)',
-                transition: 'width 0.5s ease',
+                transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 0 12px rgba(168, 85, 247, 0.6)',
               }}
             />
           </div>
         </div>
 
-        <div style={{display: 'flex', alignItems: 'center', gap: '1rem', fontFamily: 'monospace', fontSize: '0.8rem', flexWrap: 'wrap'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '1.25rem', fontFamily: 'monospace', fontSize: '0.8rem', flexWrap: 'wrap'}}>
           <div>
-            <span style={{color: '#64748b'}}>HEIST PROGRESS: </span>
-            <strong style={{color: heistProgress === 100 ? '#10b981' : '#c084fc'}}>{heistProgress}%</strong>
+            <span style={{color: '#94a3b8', fontSize: '0.7rem'}}>HEIST PROGRESS</span>
+            <div style={{color: heistProgress === 100 ? '#10b981' : '#c084fc', fontWeight: 900, fontSize: '0.95rem'}}>
+              {heistProgress}%
+            </div>
           </div>
-          <div style={{borderLeft: '1px solid #334155', paddingLeft: '1rem'}}>
-            <span style={{color: '#64748b'}}>CAUSAL STATUS: </span>
-            <strong style={{color: isCompartmentRevealed ? '#a855f7' : '#f59e0b'}}>
-              {isCompartmentRevealed ? 'MUTATED' : 'STABLE'}
-            </strong>
+          <div style={{borderLeft: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '1.25rem'}}>
+            <span style={{color: '#94a3b8', fontSize: '0.7rem'}}>CAUSAL STATUS</span>
+            <div style={{color: isCompartmentRevealed ? '#a855f7' : '#f59e0b', fontWeight: 900, fontSize: '0.95rem'}}>
+              {isCompartmentRevealed ? 'MUTATED (COMPARTMENT OPEN)' : 'STABLE BASELINE'}
+            </div>
           </div>
-          <div style={{borderLeft: '1px solid #334155', paddingLeft: '1rem'}}>
-            <span style={{color: '#64748b'}}>SCORE: </span>
-            <strong style={{color: '#f59e0b'}}>🏆 {heistScore} PTS</strong>
+          <div style={{borderLeft: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '1.25rem'}}>
+            <span style={{color: '#94a3b8', fontSize: '0.7rem'}}>TACTICAL SCORE</span>
+            <div style={{color: '#f59e0b', fontWeight: 900, fontSize: '0.95rem'}}>
+              🏆 {heistScore} PTS
+            </div>
           </div>
           <button
             onClick={() => {
@@ -242,18 +249,18 @@ export function VaultRoomView({
             }}
             style={{
               background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
-              border: '1px solid #a855f7',
+              border: '1.5px solid #a855f7',
               color: '#f8fafc',
-              borderRadius: '6px',
-              padding: '0.4rem 0.85rem',
-              fontSize: '0.75rem',
+              borderRadius: '8px',
+              padding: '0.5rem 1rem',
+              fontSize: '0.8rem',
               fontFamily: 'monospace',
               fontWeight: 800,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.45rem',
-              boxShadow: '0 0 14px rgba(168, 85, 247, 0.4)',
+              gap: '0.5rem',
+              boxShadow: '0 0 18px rgba(168, 85, 247, 0.45)',
               transition: 'all 0.2s ease',
             }}
           >
@@ -658,8 +665,8 @@ export function VaultRoomView({
         {/* SIDEBAR: OBJECT INSPECTOR & INVENTORY */}
         <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
           {/* Object Inspector */}
-          <div style={{background: '#0d131f', border: '1px solid #1e293b', borderRadius: '8px', padding: '1.25rem', flex: 1}}>
-            <div style={{fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontFamily: 'monospace', borderBottom: '1px solid #1e293b', paddingBottom: '0.4rem', marginBottom: '0.75rem'}}>
+          <div style={{background: 'linear-gradient(180deg, rgba(13, 19, 31, 0.95) 0%, rgba(10, 14, 26, 0.98) 100%)', border: `1.5px solid ${accentColor}55`, borderRadius: '12px', padding: '1.4rem', flex: 1, boxShadow: `0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)`, backdropFilter: 'blur(16px)'}}>
+            <div style={{fontSize: '0.7rem', color: accentColor, fontWeight: 900, textTransform: 'uppercase', fontFamily: 'monospace', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '0.45rem', marginBottom: '0.85rem', letterSpacing: '0.08em'}}>
               // ARTIFACT_ANALYSIS_SCANNER
             </div>
 
@@ -843,28 +850,30 @@ export function VaultRoomView({
           </div>
 
           {/* Tactical Inventory HUD */}
-          <div style={{background: '#0d131f', border: '1px solid #1e293b', borderRadius: '8px', padding: '1rem'}}>
-            <div style={{fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontFamily: 'monospace', borderBottom: '1px solid #1e293b', paddingBottom: '0.3rem', marginBottom: '0.6rem'}}>
-              TACTICAL_INVENTORY ({inventory.length})
+          <div style={{background: 'linear-gradient(180deg, rgba(13, 19, 31, 0.95) 0%, rgba(10, 14, 26, 0.98) 100%)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', padding: '1.2rem', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(16px)'}}>
+            <div style={{fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontFamily: 'monospace', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '0.4rem', marginBottom: '0.75rem', fontWeight: 800, letterSpacing: '0.08em'}}>
+              🎒 TACTICAL_INVENTORY ({inventory.length})
             </div>
-            <div style={{display: 'flex', flexDirection: 'column', gap: '0.4rem'}}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
               {inventory.map((item, i) => (
                 <div
                   key={i}
                   style={{
-                    background: '#070a10',
-                    border: '1px solid #1e293b',
-                    padding: '0.35rem 0.6rem',
-                    borderRadius: '4px',
-                    fontSize: '0.75rem',
-                    color: '#e2e8f0',
+                    background: 'rgba(15, 23, 42, 0.75)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    padding: '0.45rem 0.75rem',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    color: '#f8fafc',
                     fontFamily: 'monospace',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.4rem',
+                    gap: '0.5rem',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
                   }}
                 >
-                  <span style={{color: '#10b981'}}>✔</span> {item}
+                  <span style={{color: '#10b981', fontWeight: 900}}>✔</span>
+                  <span>{item}</span>
                 </div>
               ))}
             </div>

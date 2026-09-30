@@ -242,41 +242,41 @@ export function Vault3DCanvas({
     container.innerHTML = ''
     container.appendChild(renderer.domElement)
 
-    // Vibrant Era Color Themes & Lighting
+    // Vibrant Era Color Themes & Lighting (High-Contrast & Impeccable)
     const eraThemes = {
       1920: {
-        bg: 0x1a120b, // Warm dark espresso
-        ambient: 0x854d0e, // Warm amber ambient
+        bg: 0x22150d, // Warm dark espresso
+        ambient: 0xfef08a, // Luminous warm amber ambient
         primary: 0xfbbf24, // Bright warm gold
         accent: 0xd97706, // Rich amber
-        wallColor: 0x8a5a36, // Antique wood & limestone
+        wallColor: 0xded2be, // Luminous antique limestone cream (High Contrast!)
         wallTrim: 0xf59e0b, // Polished brass trim
         chandelier: 0xffedd5, // Warm lantern light
       },
       1970: {
-        bg: 0x0f172a, // Deep slate navy
-        ambient: 0x38bdf8, // Cold War electric cyan ambient
+        bg: 0x0c1929, // Deep slate navy
+        ambient: 0x67e8f9, // Cold War electric cyan ambient
         primary: 0x22d3ee, // Crisp cyan
         accent: 0x0284c7, // Deep industrial blue
-        wallColor: 0x64748b, // High-visibility bunker concrete
-        wallTrim: 0xeab308, // Hazard yellow warning trim
+        wallColor: 0x94a3b8, // High-visibility clean bunker concrete
+        wallTrim: 0xfacc15, // Bright hazard yellow warning trim
         chandelier: 0xe0f2fe, // Fluorescent white-cyan
       },
       2026: {
-        bg: 0x0a0614, // Cyberpunk deep obsidian
-        ambient: 0x818cf8, // Indigo-violet ambient
+        bg: 0x0a0c1a, // Cyberpunk deep obsidian
+        ambient: 0xc4b5fd, // Indigo-violet ambient
         primary: 0xc084fc, // Bright neon violet
         accent: 0x38bdf8, // Electric laser cyan
-        wallColor: 0x334155, // Sci-fi matte titanium composite
+        wallColor: 0xe2e8f0, // Clean sci-fi white composite panels
         wallTrim: 0xa855f7, // Glowing violet trim
-        chandelier: 0xec4899, // Holographic magenta-cyan
+        chandelier: 0xffffff, // Holographic white-cyan keylight
       },
     }[eraYear as 1920 | 1970 | 2026] || {
       bg: 0x0f172a,
-      ambient: 0x64748b,
+      ambient: 0x94a3b8,
       primary: 0xa855f7,
       accent: 0x38bdf8,
-      wallColor: 0x475569,
+      wallColor: 0xe2e8f0,
       wallTrim: 0xa855f7,
       chandelier: 0xffffff,
     }
@@ -284,11 +284,11 @@ export function Vault3DCanvas({
     scene.background = new THREE.Color(eraThemes.bg)
 
     // 2. High-Visibility Multi-Source Illumination (Crisp & High-Contrast)
-    const ambientLight = new THREE.AmbientLight(eraThemes.ambient, 2.2)
+    const ambientLight = new THREE.AmbientLight(eraThemes.ambient, 2.6)
     scene.add(ambientLight)
 
     // Overhead Center Light (Chandelier / Fluorescent Bank / Hologram Emitter)
-    const ceilingLight = new THREE.PointLight(eraThemes.chandelier, 4.2, 32)
+    const ceilingLight = new THREE.PointLight(eraThemes.chandelier, 5.0, 36)
     ceilingLight.position.set(0, 7.8, 0)
     ceilingLight.castShadow = true
     ceilingLight.shadow.mapSize.width = 1024
@@ -338,6 +338,57 @@ export function Vault3DCanvas({
     floor.rotation.x = -Math.PI / 2
     floor.receiveShadow = true
     scene.add(floor)
+
+    // Era-Specific Center Focal Rug / Walkway
+    if (eraYear === 1920) {
+      const rugGeo = new THREE.PlaneGeometry(8.2, 5.2)
+      const rugCanvas = document.createElement('canvas')
+      rugCanvas.width = 512
+      rugCanvas.height = 320
+      const rCtx = rugCanvas.getContext('2d')!
+      rCtx.fillStyle = '#7f1d1d' // Luxurious deep crimson velvet
+      rCtx.fillRect(0, 0, 512, 320)
+      rCtx.strokeStyle = '#f59e0b' // Gold filigree border
+      rCtx.lineWidth = 14
+      rCtx.strokeRect(10, 10, 492, 300)
+      rCtx.strokeStyle = '#fef08a'
+      rCtx.lineWidth = 4
+      rCtx.strokeRect(24, 24, 464, 272)
+      // Center Medallion
+      rCtx.fillStyle = '#991b1b'
+      rCtx.beginPath()
+      rCtx.ellipse(256, 160, 100, 60, 0, 0, Math.PI * 2)
+      rCtx.fill()
+      rCtx.strokeStyle = '#fbbf24'
+      rCtx.lineWidth = 3
+      rCtx.stroke()
+      const rugTex = new THREE.CanvasTexture(rugCanvas)
+      const rugMat = new THREE.MeshStandardMaterial({map: rugTex, roughness: 0.85})
+      const rug = new THREE.Mesh(rugGeo, rugMat)
+      rug.rotation.x = -Math.PI / 2
+      rug.position.set(0, 0.015, 0)
+      rug.receiveShadow = true
+      scene.add(rug)
+    } else if (eraYear === 1970) {
+      const hazardGeo = new THREE.PlaneGeometry(8.2, 5.2)
+      const hCanvas = document.createElement('canvas')
+      hCanvas.width = 512
+      hCanvas.height = 320
+      const hCtx = hCanvas.getContext('2d')!
+      hCtx.fillStyle = '#1e293b'
+      hCtx.fillRect(0, 0, 512, 320)
+      // Yellow hazard perimeter
+      hCtx.strokeStyle = '#eab308'
+      hCtx.lineWidth = 16
+      hCtx.strokeRect(8, 8, 496, 304)
+      const hTex = new THREE.CanvasTexture(hCanvas)
+      const hMat = new THREE.MeshStandardMaterial({map: hTex, roughness: 0.5})
+      const hMesh = new THREE.Mesh(hazardGeo, hMat)
+      hMesh.rotation.x = -Math.PI / 2
+      hMesh.position.set(0, 0.015, 0)
+      hMesh.receiveShadow = true
+      scene.add(hMesh)
+    }
 
     // Ceiling Beams / Grid Structure
     const beamGeo = new THREE.BoxGeometry(16, 0.5, 0.6)
