@@ -5,6 +5,17 @@ import {proposeTemporalAction, commitCausality} from '@/app/actions'
 import {Vault3DCanvas} from '@/components/Vault3DCanvas'
 import {playTick, playBeep, playDiscoveryFanfare} from '@/lib/soundEffects'
 import confetti from 'canvas-confetti'
+import {SafeDialPuzzle} from '@/components/puzzles/SafeDialPuzzle'
+import {OscilloscopePuzzle} from '@/components/puzzles/OscilloscopePuzzle'
+import {EvidenceBoardModal} from '@/components/EvidenceBoardModal'
+
+interface ClueData {
+  _id: string
+  title: string
+  description?: string
+  discoveryState?: string
+  location?: {name?: string; era?: {year?: number}}
+}
 
 interface GameObject {
   _id: string
@@ -53,6 +64,7 @@ export function VaultRoomView({
   roomsByEra,
   timelinesByEra,
   pendingAction,
+  clues = [],
   sessionCode = 'CHRONOS-ALPHA',
 }: {
   eras: Array<{_id: string; year: number; name: string; description: string}>
@@ -60,6 +72,7 @@ export function VaultRoomView({
   roomsByEra: Record<number, RoomData>
   timelinesByEra: Record<number, TimelineStateData>
   pendingAction?: {description: string; sourceEra?: {year: number}} | null
+  clues?: ClueData[]
   sessionCode?: string
 }) {
   const [selectedYear, setSelectedYear] = useState<number>(initialEraYear)
@@ -69,6 +82,34 @@ export function VaultRoomView({
   const [inventory, setInventory] = useState<string[]>(['Chronos Temporal Scanner'])
   const [isPending, startTransition] = useTransition()
   const [actionStatus, setActionStatus] = useState<string | null>(null)
+
+  // Interactive Gaming & Minigame States
+  const [showSafePuzzle, setShowSafePuzzle] = useState(false)
+  const [showOscilloscopePuzzle, setShowOscilloscopePuzzle] = useState(false)
+  const [showEvidenceBoard, setShowEvidenceBoard] = useState(false)
+  const [heistScore, setHeistScore] = useState(1250)
+  const [puzzlesSolved, setPuzzlesSolved] = useState({safe: false, oscilloscope: false})
+
+  const handleSafeSolved = () => {
+    setShowSafePuzzle(false)
+    if (!puzzlesSolved.safe) {
+      setPuzzlesSolved((prev) => ({...prev, safe: true}))
+      setHeistScore((prev) => prev + 500)
+      if (!inventory.includes('Antique Brass Vault Key')) {
+        setInventory((prev) => [...prev, 'Antique Brass Vault Key'])
+      }
+      setActionStatus('SUCCESS: 1920 Wall Safe opened! Antique Brass Vault Key recovered into inventory (+500 PTS).')
+    }
+  }
+
+  const handleOscilloscopeSolved = () => {
+    setShowOscilloscopePuzzle(false)
+    if (!puzzlesSolved.oscilloscope) {
+      setPuzzlesSolved((prev) => ({...prev, oscilloscope: true}))
+      setHeistScore((prev) => prev + 500)
+      setActionStatus('SUCCESS: Harmonic standing wave calibrated at 432 Hz! Resonance frequency decrypted (+500 PTS).')
+    }
+  }
 
   const activeEra = eras.find((e) => e.year === selectedYear) || eras[0]
   const currentRoom = roomsByEra[selectedYear]
@@ -176,7 +217,7 @@ export function VaultRoomView({
           </div>
         </div>
 
-        <div style={{display: 'flex', alignItems: 'center', gap: '1rem', fontFamily: 'monospace', fontSize: '0.8rem'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '1rem', fontFamily: 'monospace', fontSize: '0.8rem', flexWrap: 'wrap'}}>
           <div>
             <span style={{color: '#64748b'}}>HEIST PROGRESS: </span>
             <strong style={{color: heistProgress === 100 ? '#10b981' : '#c084fc'}}>{heistProgress}%</strong>
@@ -187,6 +228,34 @@ export function VaultRoomView({
               {isCompartmentRevealed ? 'MUTATED' : 'STABLE'}
             </strong>
           </div>
+          <div style={{borderLeft: '1px solid #334155', paddingLeft: '1rem'}}>
+            <span style={{color: '#64748b'}}>SCORE: </span>
+            <strong style={{color: '#f59e0b'}}>🏆 {heistScore} PTS</strong>
+          </div>
+          <button
+            onClick={() => {
+              playBeep()
+              setShowEvidenceBoard(true)
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #1e1b4b, #312e81)',
+              border: '1px solid #a855f7',
+              color: '#f8fafc',
+              borderRadius: '6px',
+              padding: '0.4rem 0.85rem',
+              fontSize: '0.75rem',
+              fontFamily: 'monospace',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              boxShadow: '0 0 14px rgba(168, 85, 247, 0.4)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span>📋</span> EVIDENCE PINBOARD ({clues.length})
+          </button>
         </div>
       </div>
 
@@ -247,6 +316,59 @@ export function VaultRoomView({
             )
           })}
         </div>
+
+        {/* Quick Minigame Launchers for Active Era */}
+        {selectedYear === 1920 && (
+          <button
+            onClick={() => {
+              playBeep()
+              setShowSafePuzzle(true)
+            }}
+            style={{
+              background: puzzlesSolved.safe ? '#064e3b' : 'linear-gradient(135deg, #78350f, #b45309)',
+              border: `1px solid ${puzzlesSolved.safe ? '#10b981' : '#f59e0b'}`,
+              color: '#ffffff',
+              borderRadius: '6px',
+              padding: '0.4rem 0.8rem',
+              fontSize: '0.75rem',
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              boxShadow: puzzlesSolved.safe ? 'none' : '0 0 12px rgba(245, 158, 11, 0.4)',
+            }}
+          >
+            <span>{puzzlesSolved.safe ? '✔' : '🔐'}</span> {puzzlesSolved.safe ? 'SAFE CRACKED' : 'CRACK ROTARY SAFE'}
+          </button>
+        )}
+
+        {selectedYear === 1970 && (
+          <button
+            onClick={() => {
+              playBeep()
+              setShowOscilloscopePuzzle(true)
+            }}
+            style={{
+              background: puzzlesSolved.oscilloscope ? '#064e3b' : 'linear-gradient(135deg, #0e7490, #0891b2)',
+              border: `1px solid ${puzzlesSolved.oscilloscope ? '#10b981' : '#06b6d4'}`,
+              color: '#ffffff',
+              borderRadius: '6px',
+              padding: '0.4rem 0.8rem',
+              fontSize: '0.75rem',
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              boxShadow: puzzlesSolved.oscilloscope ? 'none' : '0 0 12px rgba(6, 182, 212, 0.4)',
+            }}
+          >
+            <span>{puzzlesSolved.oscilloscope ? '✔' : '📻'}</span> {puzzlesSolved.oscilloscope ? '432 HZ RESONANT' : 'TUNE OSCILLOSCOPE'}
+          </button>
+        )}
 
         {/* View Mode & Camera Presets */}
         <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', fontFamily: 'monospace', fontSize: '0.8rem'}}>
@@ -574,6 +696,54 @@ export function VaultRoomView({
                     + Pick Up into Tactical Inventory
                   </button>
 
+                  {/* 1920 Crack Safe Minigame */}
+                  {selectedYear === 1920 && (
+                    <button
+                      onClick={() => {
+                        playBeep()
+                        setShowSafePuzzle(true)
+                      }}
+                      style={{
+                        background: puzzlesSolved.safe ? '#064e3b' : 'linear-gradient(135deg, #d97706, #b45309)',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.6rem',
+                        fontSize: '0.8rem',
+                        fontFamily: 'monospace',
+                        cursor: 'pointer',
+                        boxShadow: puzzlesSolved.safe ? 'none' : '0 0 14px rgba(217, 119, 6, 0.5)',
+                      }}
+                    >
+                      {puzzlesSolved.safe ? '✔ ROTARY SAFE UNLOCKED (+500)' : '🔐 CRACK ROTARY SAFE (MINIGAME)'}
+                    </button>
+                  )}
+
+                  {/* 1970 Oscilloscope Minigame */}
+                  {selectedYear === 1970 && (
+                    <button
+                      onClick={() => {
+                        playBeep()
+                        setShowOscilloscopePuzzle(true)
+                      }}
+                      style={{
+                        background: puzzlesSolved.oscilloscope ? '#064e3b' : 'linear-gradient(135deg, #0891b2, #0284c7)',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.6rem',
+                        fontSize: '0.8rem',
+                        fontFamily: 'monospace',
+                        cursor: 'pointer',
+                        boxShadow: puzzlesSolved.oscilloscope ? 'none' : '0 0 14px rgba(8, 145, 178, 0.5)',
+                      }}
+                    >
+                      {puzzlesSolved.oscilloscope ? '✔ 432 HZ HARMONIC LOCK ENGAGED (+500)' : '📻 TUNE 1970 OSCILLOSCOPE (MINIGAME)'}
+                    </button>
+                  )}
+
                   {/* 1920 Bury Key Action */}
                   {selectedYear === 1920 && selectedObject._id === 'obj-brass-key' && (
                     <button
@@ -603,7 +773,8 @@ export function VaultRoomView({
                         handlePickup(selectedObject)
                         playDiscoveryFanfare()
                         confetti({particleCount: 120, spread: 90})
-                        setActionStatus('MISSION ACCOMPLISHED: The Chronos Core has been recovered! History stabilized.')
+                        setHeistScore((prev) => prev + 1000)
+                        setActionStatus('MISSION ACCOMPLISHED: The Chronos Core has been recovered! History stabilized (+1000 PTS).')
                       }}
                       style={{
                         background: 'linear-gradient(135deg, #a855f7, #6366f1)',
@@ -659,6 +830,27 @@ export function VaultRoomView({
           </div>
         </div>
       </div>
+
+      {/* Minigame & Evidence Modals */}
+      {showSafePuzzle && (
+        <SafeDialPuzzle
+          onSuccess={handleSafeSolved}
+          onClose={() => setShowSafePuzzle(false)}
+        />
+      )}
+
+      {showOscilloscopePuzzle && (
+        <OscilloscopePuzzle
+          onSuccess={handleOscilloscopeSolved}
+          onClose={() => setShowOscilloscopePuzzle(false)}
+        />
+      )}
+
+      <EvidenceBoardModal
+        clues={clues}
+        isOpen={showEvidenceBoard}
+        onClose={() => setShowEvidenceBoard(false)}
+      />
     </div>
   )
 }

@@ -10,7 +10,7 @@ export default async function GamePage({params}: {params: Promise<{session: stri
   const {session} = await params
   const sessionCode = session || 'CHRONOS-ALPHA'
 
-  const [eras, rooms, timelines, pendingAction] = await Promise.all([
+  const [eras, rooms, timelines, pendingAction, clues] = await Promise.all([
     client.fetch<any[]>(`*[_type == "era"] | order(order asc){
       _id,
       name,
@@ -57,6 +57,16 @@ export default async function GamePage({params}: {params: Promise<{session: stri
       description,
       sourceEra->{year}
     }`),
+    client.fetch<any[]>(`*[_type == "clue"]{
+      _id,
+      title,
+      description,
+      discoveryState,
+      location->{
+        name,
+        era->{year}
+      }
+    }`),
   ])
 
   // Index rooms and timelines by year
@@ -80,6 +90,7 @@ export default async function GamePage({params}: {params: Promise<{session: stri
           roomsByEra={roomsByEra}
           timelinesByEra={timelinesByEra}
           pendingAction={pendingAction}
+          clues={clues}
           sessionCode={sessionCode}
         />
 

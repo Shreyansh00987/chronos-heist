@@ -498,6 +498,44 @@ async function seed() {
       relationshipType: 'reveals',
       strength: 95,
       explanation: 'Burying the Antique Brass Key in the 1920 North Wall preserves it through the 1970 renovation, causing the secret compartment to materialize in the 2026 vault.'
+    },
+
+    // 9. CLUES & INVESTIGATION EVIDENCE
+    {
+      _id: 'clue-safe-cipher',
+      _type: 'clue',
+      title: "The Horologist's Safe Combination",
+      description: "A secret sequence engraved behind the celestial pendulum: '19 - 70 - 26' representing the three temporal coordinates.",
+      location: { _type: 'reference', _ref: 'room-vault-1920' },
+      discoveryState: 'discovered',
+      relatedObjects: [{ _type: 'reference', _ref: 'obj-safe-dial-1920', _key: 'c1' }]
+    },
+    {
+      _id: 'clue-mortar-void',
+      _type: 'clue',
+      title: "Lime Mortar Degradation Analysis",
+      description: "1920 Ledger Note: 'The mortar along the north vault stones is intentionally porous, allowing an artifact to rest unharmed across decades.'",
+      location: { _type: 'reference', _ref: 'room-vault-1920' },
+      discoveryState: 'discovered',
+      relatedObjects: [{ _type: 'reference', _ref: 'obj-brass-key', _key: 'c2' }, { _type: 'reference', _ref: 'obj-north-wall-1920', _key: 'c3' }]
+    },
+    {
+      _id: 'clue-resonance-shift',
+      _type: 'clue',
+      title: "432 Hz Standing Wave Anomaly",
+      description: "1970 Tape Log #44: 'Acoustic resonance spikes at 432 Hz whenever current runs through the north junction conduit.'",
+      location: { _type: 'reference', _ref: 'room-vault-1970' },
+      discoveryState: 'discovered',
+      relatedObjects: [{ _type: 'reference', _ref: 'obj-oscilloscope-1970', _key: 'c4' }]
+    },
+    {
+      _id: 'clue-chronos-core',
+      _type: 'clue',
+      title: "Tachyon Matrix Coordinates",
+      description: "2026 Quantum Scan: 'Tachyon density in the north fissure reaches peak coherence when past timeline divergence is sealed.'",
+      location: { _type: 'reference', _ref: 'room-vault-2026' },
+      discoveryState: 'discovered',
+      relatedObjects: [{ _type: 'reference', _ref: 'obj-chronos-core', _key: 'c5' }]
     }
   ];
 
