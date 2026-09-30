@@ -3,9 +3,11 @@
 
 [![Live Demo](https://img.shields.io/badge/LIVE%20DEMO-chronos--heist.vercel.app-00DF8F?style=for-the-badge&logo=vercel&logoColor=black)](https://chronos-heist.vercel.app)
 [![Play 3D Vault](https://img.shields.io/badge/PLAY%20NOW-ENTER%20VAULT-FFB800?style=for-the-badge&logo=three.js&logoColor=black)](https://chronos-heist.vercel.app/game/CHRONOS-ALPHA)
+[![Demo Video](https://img.shields.io/badge/DEMO%20VIDEO-1%20MIN%20AI%20VOICEOVER-7928CA?style=for-the-badge&logo=youtube&logoColor=white)](https://chronos-heist.vercel.app/chronos_heist_demo.mp4)
 [![Sanity Powered](https://img.shields.io/badge/SANITY-CONTENT%20LAKE-F03E2F?style=for-the-badge&logo=sanity&logoColor=white)](https://chronos-heist.vercel.app/studio)
 
 ### 🚀 **Live Production Deployment**: [https://chronos-heist.vercel.app](https://chronos-heist.vercel.app)
+- 🎬 **1-Min AI Demo Video (1080p)**: [Watch / Download Video](https://chronos-heist.vercel.app/chronos_heist_demo.mp4)
 - 🎮 **Direct 3D Room Play**: [https://chronos-heist.vercel.app/game/CHRONOS-ALPHA](https://chronos-heist.vercel.app/game/CHRONOS-ALPHA)
 - 🛡️ **Game Master Center**: [https://chronos-heist.vercel.app/gm/CHRONOS-ALPHA](https://chronos-heist.vercel.app/gm/CHRONOS-ALPHA)
 - ⚡ **D3 Causality Graph**: [https://chronos-heist.vercel.app/causality](https://chronos-heist.vercel.app/causality)
